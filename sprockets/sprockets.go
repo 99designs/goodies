@@ -1,3 +1,14 @@
+/*
+Package sprockets integrates the ruby asset pipeline tool 'sprockets'
+
+This makes it easy to get asset concatenation/minification.
+To use in development:
+ * Assets go in '/assets'
+ * Install the 'rack' and 'sprockets' rubygems
+ * run `rackup src/github.com/99designs/goodies/sprockets/config.ru`
+ * In your app, call 'NewSprocketsServer("http://localhost:8012", "assets") to get a ViewHelper'
+ * Use the ViewHelper to generate links to your assets.
+*/
 package sprockets
 
 import (

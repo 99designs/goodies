@@ -15,10 +15,10 @@ type SprocketsDirectory struct {
 	assets  map[string]string
 }
 
-func NewSprocketsDirectory(dirpath, prefix string) (*SprocketsDirectory, error) {
+func NewSprocketsDirectory(dirpath, prefix string) (ViewHelper, error) {
 	s := &SprocketsDirectory{dirpath: dirpath, prefix: prefix}
 	err := s.loadManifest()
-	return s, err
+	return ViewHelper{s}, err
 }
 
 func (s *SprocketsDirectory) GetAssetUrl(name string) (template.HTMLAttr, error) {

@@ -15,10 +15,10 @@ type SprocketsServer struct {
 	assets       map[string]string
 }
 
-func NewSprocketsServer(baseUrl, manifestPath string) (*SprocketsServer, error) {
-	s := &SprocketsServer{baseUrl: baseUrl, manifestPath: manifestPath}
+func NewSprocketsServer(baseUrl, manifestPath string) (ViewHelper, error) {
+	s := SprocketsServer{baseUrl: baseUrl, manifestPath: manifestPath}
 	err := s.loadManifest()
-	return s, err
+	return ViewHelper{&s}, err
 }
 
 func (s *SprocketsServer) GetAssetUrl(name string) (template.HTMLAttr, error) {
