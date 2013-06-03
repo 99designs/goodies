@@ -1,4 +1,4 @@
-// Test harness; has a serious bug (discards backtraces)
+// Package expect has a few test utils.
 package expect
 
 import (
