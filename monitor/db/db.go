@@ -1,4 +1,4 @@
-// Decorates any database driver with a logger
+// Package monitor/db decorates database/sql drivers with query logging and timings
 package db
 
 import "database/sql"

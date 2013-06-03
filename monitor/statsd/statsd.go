@@ -1,4 +1,4 @@
-// Null Value wrapper (for github.com/peterbourgon/g2s).
+// Package statsd records the time taken to respond to HTTP requests in statsd
 package statsd
 
 import (

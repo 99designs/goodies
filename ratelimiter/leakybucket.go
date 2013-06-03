@@ -1,3 +1,4 @@
+// Package ratelimiter implements the Leaky Bucket ratelimiting algorithm with memcached and in-memory backends.
 package ratelimiter
 
 import (

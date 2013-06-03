@@ -1,4 +1,4 @@
-// Handy testing stub on time.Time
+// Package timecop implements a stub to use in place of time.Time
 package time_cop
 
 import (

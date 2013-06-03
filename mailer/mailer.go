@@ -1,3 +1,4 @@
+// Package mailer provides email delivery (current delivery methods are 'postmark' and 'test')
 package mailer
 
 type Email struct {

@@ -1,4 +1,4 @@
-// Decorates an http.Handler; calls to 'panic' in the handler will be recovered.
+// Package errorhandling provides An HTTP decorator which recovers from `panic`
 package http
 
 import (

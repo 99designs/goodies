@@ -1,3 +1,4 @@
+// Package postmark implements a backend for 'mailer' via postmark
 package postmark
 
 import (

@@ -1,3 +1,4 @@
+// Package test_mailer implements a backend for 'mailer' which writes emails to STDOUT instead of sending them
 package test_mailer
 
 import (

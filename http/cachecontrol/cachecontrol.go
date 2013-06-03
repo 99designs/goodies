@@ -1,4 +1,5 @@
-package fs
+// Package cachecontrol provides an HTTP decorator which adds cache-control headers to outgoing responses
+package cachecontrol
 
 import (
 	"fmt"

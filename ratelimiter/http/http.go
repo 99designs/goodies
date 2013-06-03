@@ -1,4 +1,4 @@
-// Decorates an http.Handler with DOS protection from auth/ratelimiter
+// Package http rate decorates an http.Handler and prevents too many requests being made
 package http
 
 import (

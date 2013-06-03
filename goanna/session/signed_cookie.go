@@ -1,4 +1,4 @@
-// Implements a cookie session store for goanna
+// Package session implements a cookie session store for goanna
 package session
 
 import (

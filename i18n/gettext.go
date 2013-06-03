@@ -1,3 +1,4 @@
+// Package i18n implements a gettext based translation library with XLiff support 
 package i18n
 
 import (

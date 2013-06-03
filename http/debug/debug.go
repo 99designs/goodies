@@ -1,3 +1,4 @@
+// Package debug implements an HTTP decorator which dumps request/response bodies to STDOUT
 package debug
 
 import (

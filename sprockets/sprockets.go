@@ -1,7 +1,6 @@
 /*
-Package sprockets integrates the ruby asset pipeline tool 'sprockets'
+Package sprockets integrates the power of sprockets ( http://getsprockets.org ) with your go program.
 
-This makes it easy to get asset concatenation/minification.
 To use in development:
  * Assets go in '/assets'
  * Install the 'rack' and 'sprockets' rubygems

@@ -1,3 +1,4 @@
+// Package http rate decorates an gorilla.Mux and prevents too many requests being made
 package gorilla
 
 import (
