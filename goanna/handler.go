@@ -56,6 +56,9 @@ func (handler ControllerHandler) isValid() bool {
 	controller := handler.factory()
 	rController := reflect.ValueOf(controller)
 	method := rController.MethodByName(handler.methodName)
+	if (method == reflect.Value{}) {
+		panic("No such method: " + handler.methodName)
+	}
 	typeOfMethod := method.Type()
 
 	var r *Response
