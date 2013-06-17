@@ -11,7 +11,19 @@ type Views struct {
 }
 
 func NewView(viewHelper *sprockets.ViewHelper) Views {
-	tmpl := template.New("Template")
+	v := Views{nil, viewHelper}
+	v.Init()
+	return v
+}
 
-	return Views{tmpl, viewHelper}
+func (v *Views) Init() {
+	if v.Template == nil {
+		v.Template = template.New("Template")
+	}
+
+	v.Template.Funcs(template.FuncMap{
+		"urlFor":     UrlFor,
+		"stylesheet": v.ViewHelper.StylesheetLinkTag,
+		"javascript": v.ViewHelper.JavascriptTag,
+	})
 }
