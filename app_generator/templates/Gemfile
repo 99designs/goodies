@@ -1,0 +1,10 @@
+source 'https://rubygems.org'
+
+gem 'rake'
+gem 'sprockets'
+gem 'rack'
+gem 'haml'
+gem 'coffee-script'
+gem 'yui-compressor'
+gem 'uglifier'
+gem 'foreman'

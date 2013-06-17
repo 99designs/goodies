@@ -1,0 +1,24 @@
+package sample
+
+import (
+	"github.com/99designs/goodies/goanna"
+	_ "mime/multipart"
+	"net/http"
+	"{%% .Name %%}/application"
+	"{%% .Name %%}/templates"
+)
+
+type SampleController struct {
+	goanna.Controller
+}
+
+func (c *SampleController) Init(r *http.Request) {
+	c.Controller = goanna.NewController(r, application.SessionStore)
+}
+
+func (c *SampleController) SamplePage() goanna.Response {
+	return c.RenderTemplateResponse(
+		application.Templates.Lookup("sample.html"), 
+		templates.TemplateParam{Field: "Sample field"},
+	)
+}

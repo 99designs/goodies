@@ -1,0 +1,70 @@
+package application
+
+import (
+	"github.com/99designs/goodies/config"
+	"github.com/99designs/goodies/goanna"
+	"github.com/99designs/goodies/goanna/session"
+	"github.com/99designs/goodies/sprockets"
+	"html/template"
+	"os"
+	"time"
+)
+
+var Config ApplicationConfig
+var SessionStore goanna.SessionStore
+var Templates goanna.Views
+var AssetPipeline sprockets.ViewHelper
+var Basedir string
+var AppEnv string
+
+type ApplicationConfig struct {
+	RecoverFromErrors    bool
+	BindAddress          string
+	DebugAddress         string
+	SessionName          string
+	SessionSecret        string
+	SessionDurationHours int
+
+	ServeStatics             bool
+	SprocketsBaseUrl         string
+	SprocketsManifestPath    string
+	SprocketsServeLiveAssets bool
+	SprocketsNoAssets        bool
+}
+
+func init() {
+	var err error
+	Basedir, err = os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	AppEnv := os.Getenv("APP_ENV")
+	if AppEnv == "" {
+		config.Load(Basedir+"/config/config.json", &Config)
+	} else {
+		config.Load(Basedir+"/config/config."+AppEnv+".json", &Config)
+	}
+
+	SessionStore = session.NewCookieSessionStore(
+		Config.SessionName,
+		Config.SessionSecret,
+		time.Duration(Config.SessionDurationHours*int(time.Hour)),
+	)
+	
+	if !Config.SprocketsNoAssets {
+		if Config.SprocketsServeLiveAssets {
+			AssetPipeline, err = sprockets.NewSprocketsServer(Config.SprocketsBaseUrl, Config.SprocketsManifestPath)
+		} else {
+			AssetPipeline, err = sprockets.NewSprocketsDirectory(Basedir+"/public", "/assets/")
+		}
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	Templates = goanna.Views{
+		ViewHelper: &AssetPipeline,
+	}
+	Templates.Init()
+	template.Must(Templates.Template.ParseGlob("./templates/*.html"))
+}

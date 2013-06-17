@@ -1,0 +1,61 @@
+package main
+
+import (
+	errorRecovery "github.com/99designs/goodies/errorhandling"
+	"github.com/99designs/goodies/goanna"
+	cachecontrol "github.com/99designs/goodies/http/cachecontrol"
+	logger "github.com/99designs/goodies/http/log"
+	httpgzip "github.com/daaku/go.httpgzip"
+	"log"
+	"net/http"
+	"os"
+	"time"
+	"{%% .Name %%}/application"
+	"{%% .Name %%}/controllers/sample"
+)
+
+func main() {
+	sample.Handler(goanna.Router)
+
+	if application.Config.ServeStatics {
+		goanna.Router.PathPrefix("/assets/").Handler(
+			httpgzip.NewHandler(
+				cachecontrol.CacheControl(60*60*24*365, // cache for 1 year
+					http.StripPrefix("/assets",
+						http.FileServer(http.Dir("./public/"))))))
+	}
+
+	handler := logger.NewCommonLogHandler(log.New(os.Stderr, "", log.LstdFlags), goanna.Router)
+	if application.Config.RecoverFromErrors {
+		handler = errorRecovery.Decorate(handler, nil)
+	}
+
+	sampleController := func() goanna.ControllerInterface { return &sample.SampleController{} }
+
+	httpSrv := &http.Server{
+		Addr:         application.Config.BindAddress,
+		Handler:      handler,
+		ReadTimeout:  10 * time.Second, // Absolute time from start reading request to finish reading request
+		WriteTimeout: 20 * time.Second, // Absolute time from start reading request to finish writing
+	}
+
+	http.Handle("/", goanna.NewHandler(sampleController, "SamplePage"))
+
+	// Normal requests
+	go func() {
+		err := httpSrv.ListenAndServe()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	// Profiling only (uses default handler)
+	go func() {
+		err := http.ListenAndServe(application.Config.DebugAddress, nil)
+		if err != nil {
+			log.Printf("Could not bind on '%s'; debug info disabled.\n", application.Config.DebugAddress)
+		}
+	}()
+
+	select {}
+}

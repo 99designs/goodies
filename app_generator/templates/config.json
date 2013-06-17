@@ -1,0 +1,14 @@
+{
+	"SessionName"     			: "SessionName",
+	"SessionSecret"   			: "SessionSecret",
+	"SessionDurationHours"      : 12,
+	"RecoverFromErrors" 		: false,
+	"BindAddress"      			: ":{%% .DevTempPort %%}",
+	"DebugAddress"      		: "",
+
+	"ServeStatics"              : false,
+	"SprocketsBaseUrl"          : "http://localhost:{%% .DevAssetPort %%}/",
+	"SprocketsManifestPath"     : "assets",
+	"SprocketsServeLiveAssets"  : true,
+	"SprocketsNoAssets"         : false
+}

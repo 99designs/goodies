@@ -1,0 +1,16 @@
+package sample
+
+import (
+	"github.com/99designs/goodies/goanna"
+	"github.com/gorilla/mux"
+	"net/http"
+)
+
+type Router interface {
+	Handle(string, http.Handler) *mux.Route
+}
+
+func Handler(router Router) {
+	controller := func() goanna.ControllerInterface { return &SampleController{} }
+	router.Handle("/", goanna.NewHandler(controller, "SamplePage")).Name("sample")
+}

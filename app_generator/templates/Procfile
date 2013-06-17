@@ -1,0 +1,2 @@
+dev_assets: rackup -p {%% .DevAssetPort %%} src/github.com/99designs/goodies/sprockets/config.ru
+web: bin/shotgun -u http://localhost:{%% .DevTempPort %%} -p {%% .DevServerPort %%} {%% .Name %%}
