@@ -1,4 +1,4 @@
-#\ -w -p 8012
+#\ -w
 
 require 'bundler'
 Bundler.setup :development
