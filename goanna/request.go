@@ -21,9 +21,13 @@ func (r *Request) CookieValue(name string) string {
 }
 
 func (r *Request) BodyData() []byte {
+	var err error
 	if !r.bodyRead {
 		if r.Body != nil {
-			r.bodyData, _ = ioutil.ReadAll(r.Body)
+			r.bodyData, err = ioutil.ReadAll(r.Body)
+			if err != nil {
+				panic(err)
+			}
 		}
 		r.bodyRead = true
 	}
