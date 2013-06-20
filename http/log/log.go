@@ -17,7 +17,7 @@ type CommonLogHandler struct {
 func DefaultCommonLogHandler(h http.Handler) http.Handler {
 	return &CommonLogHandler{
 		handler: h,
-		logger:  log.New(os.Stderr, "", log.LstdFlags),
+		logger:  log.New(os.Stderr, "", 0),
 	}
 }
 
