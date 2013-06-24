@@ -27,7 +27,7 @@ func DefaultCommonLogHandler(h http.Handler, flags_arr ...int) http.Handler {
 	}
 	return &CommonLogHandler{
 		handler: h,
-		logger:  log.New(os.Stderr, "", log.LstdFlags),
+		logger:  log.New(os.Stderr, "", 0),
 		flags:   flags,
 	}
 }
