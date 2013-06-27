@@ -9,22 +9,38 @@ import (
 	"time"
 )
 
+const (
+	UseXForwardedAddress = 1 << iota
+)
+
 type CommonLogHandler struct {
 	handler http.Handler
 	logger  *log.Logger
+	flags   int
 }
 
-func DefaultCommonLogHandler(h http.Handler) http.Handler {
+// flags_arr is so that no code is broken by an API change
+func DefaultCommonLogHandler(h http.Handler, flags_arr ...int) http.Handler {
+	flags := 0
+	if len(flags_arr) > 0 {
+		flags = flags_arr[0]
+	}
 	return &CommonLogHandler{
 		handler: h,
 		logger:  log.New(os.Stderr, "", 0),
+		flags:   flags,
 	}
 }
 
-func NewCommonLogHandler(logger *log.Logger, h http.Handler) http.Handler {
+func NewCommonLogHandler(logger *log.Logger, h http.Handler, flags_arr ...int) http.Handler {
+	flags := 0
+	if len(flags_arr) > 0 {
+		flags = flags_arr[0]
+	}
 	return &CommonLogHandler{
 		handler: h,
 		logger:  logger,
+		flags:   flags,
 	}
 }
 
@@ -41,9 +57,16 @@ func (lh *CommonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 			username = name
 		}
 	}
-
+	addr := req.RemoteAddr
+	if (lh.flags & UseXForwardedAddress) != 0 {
+		ip := req.Header.Get("X-Forwarded-For")
+		port := req.Header.Get("X-Forwarded-Port")
+		if ip != "" && port != "" {
+			addr = ip + ":" + port
+		}
+	}
 	lh.logger.Printf("%s %s - [%s] \"%s %s %s\" %d %d",
-		req.RemoteAddr,
+		addr,
 		username,
 		startTime.Format("02/Jan/2006:15:04:05 -0700"),
 		req.Method,
