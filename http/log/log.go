@@ -11,6 +11,7 @@ import (
 
 const (
 	UseXForwardedAddress = 1 << iota
+	StripURLQuery
 )
 
 type CommonLogHandler struct {
@@ -65,12 +66,16 @@ func (lh *CommonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 			addr = ip + ":" + port
 		}
 	}
+	uri := req.RequestURI
+	if (lh.flags & StripURLQuery) != 0 {
+		uri = req.URL.Path
+	}
 	lh.logger.Printf("%s %s - [%s] \"%s %s %s\" %d %d",
 		addr,
 		username,
 		startTime.Format("02/Jan/2006:15:04:05 -0700"),
 		req.Method,
-		req.RequestURI,
+		uri,
 		req.Proto,
 		loggedWriter.status,
 		loggedWriter.size,
