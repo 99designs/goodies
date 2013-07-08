@@ -16,9 +16,6 @@ type RateLimitedHandler struct {
 type RateLimiter func(*http.Request) bool
 
 func Decorate(delegate http.Handler, rateLimiter RateLimiter) RateLimitedHandler {
-	if rateLimiter == nil {
-		rateLimiter = DefaultRateLimiter
-	}
 	return RateLimitedHandler{delegate, rateLimiter}
 }
 
