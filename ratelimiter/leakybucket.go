@@ -54,7 +54,7 @@ func (b *LeakyBucket) Pour(amount uint16) bool {
 
 // The time at which this bucket will be completely drained
 func (b *LeakyBucket) DrainedAt() time.Time {
-	time_to_drain := time.Duration(b.Fill / float64(b.Leak_rate))
+	time_to_drain := time.Duration(b.Fill * float64(b.Leak_rate))
 	return b.Lastupdate.Add(time_to_drain)
 }
 
