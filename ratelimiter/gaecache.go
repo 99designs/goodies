@@ -3,23 +3,27 @@
 package ratelimiter
 
 import (
+	"appengine"
 	"appengine/memcache"
 	"bytes"
 	"encoding/gob"
+	"time"
 )
 
 type Gaecache struct {
+	Context appengine.Context
 	keyprefix string
 }
 
 func NewGaecache(keyprefix string) *Gaecache {
 	return &Gaecache{
-		keyprefix,
+		keyprefix: keyprefix,
 	}
 }
 
 func (gc *Gaecache) GetBucketFor(key string) (*LeakyBucket, error) {
-	if item, err := memcache.Get(gc.keyprefix + key); err != nil {
+	item, err := memcache.Get(gc.Context, gc.keyprefix + key)
+	if err != nil {
 		return nil, err
 	}
 	var bucketser LeakyBucketSer
@@ -39,9 +43,9 @@ func (gc *Gaecache) SetBucketFor(key string, bucket LeakyBucket) error {
 	if err := e.Encode(bucketser); err != nil {
 		return err
 	}
-	return memcache.Set(&memcache.Item{
+	return memcache.Set(gc.Context, &memcache.Item{
 		Key:        gc.keyprefix + key,
 		Value:      buf.Bytes(),
-		Expiration: int32(bucket.DrainedAt().Unix()),
+		Expiration: bucket.DrainedAt().Sub(time.Now()),
 	})
 }
