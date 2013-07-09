@@ -3,7 +3,6 @@ package http
 
 import (
 	"net/http"
-	"strings"
 )
 
 const StatusTooManyRequests = 429
