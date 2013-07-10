@@ -9,31 +9,20 @@ import (
 	"time"
 )
 
-const (
-	UseXForwardedAddress = 1 << iota
-	StripURLQuery
-)
-
 type commonLogHandler struct {
 	handler http.Handler
 	logger  *log.Logger
-	flags   int
 }
 
 // CommonLogHandler returns a handler that serves HTTP requests
 // If a logger is not provided, stdout will be used
-func CommonLogHandler(logger *log.Logger, h http.Handler, flags_arr ...int) http.Handler {
-	flags := 0
-	if len(flags_arr) > 0 {
-		flags = flags_arr[0]
-	}
+func CommonLogHandler(logger *log.Logger, h http.Handler) http.Handler {
 	if logger == nil {
 		logger = log.New(os.Stdout, "", 0)
 	}
 	return &commonLogHandler{
 		handler: h,
 		logger:  logger,
-		flags:   flags,
 	}
 }
 
@@ -42,13 +31,6 @@ func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 	// grab the data we need before passing it to ServeHTTP
 	startTime := time.Now()
 	reqRemoteAddr := req.RemoteAddr
-	if (lh.flags & UseXForwardedAddress) != 0 {
-		ip := req.Header.Get("X-Forwarded-For")
-		port := req.Header.Get("X-Forwarded-Port")
-		if ip != "" && port != "" {
-			reqRemoteAddr = ip + ":" + port
-		}
-	}
 	reqURLUserUsername := "-"
 	if req.URL.User != nil {
 		if name := req.URL.User.Username(); name != "" {
@@ -57,9 +39,6 @@ func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 	}
 	reqMethod := req.Method
 	reqRequestURI := req.RequestURI
-	if (lh.flags & StripURLQuery) != 0 {
-		reqRequestURI = req.URL.Path
-	}
 	reqProto := req.Proto
 
 	// decorate the writer so we can capture the status and size
