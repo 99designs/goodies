@@ -56,7 +56,7 @@ func (di *DependencyInjector) Create(avar interface{}) interface{} {
 func (di *DependencyInjector) CreateFromType(atype reflect.Type) reflect.Value {
 	constructor, exists := di.registry[atype]
 	if !exists {
-		panic("Can't find that type to create")
+		log.Panicf("Can't find a mapping to create a %s", atype)
 	}
 
 	constructorType := reflect.TypeOf(constructor)
