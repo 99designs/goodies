@@ -17,6 +17,7 @@ type Response interface {
 	SetCookie(http.Cookie)
 	ClearCookie(string)
 	GetStatusCode() int
+	Headers() http.Header
 }
 
 type OkResponse struct {
@@ -37,6 +38,10 @@ func NewStringResponse(content string) Response {
 	response := NewResponse()
 	response.Content = []byte(content)
 	return response
+}
+
+func (r *OkResponse) Headers() http.Header {
+	return r.Header
 }
 
 func (r *OkResponse) SetCookie(cookie http.Cookie) {
@@ -101,6 +106,7 @@ func NewErrorResponse(message string, code int) *ErrorResponse {
 }
 
 func (r *ErrorResponse) Send(w http.ResponseWriter) {
+	r.SendHeaders(w)
 	http.Error(w, r.Message, r.Code)
 	r.SetNoCache()
 }
