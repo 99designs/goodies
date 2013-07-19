@@ -49,7 +49,11 @@ func (lh *CommonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 	startTime := time.Now()
 
 	loggedWriter := &responseLogger{w: w}
-	lh.handler.ServeHTTP(loggedWriter, req)
+	orig := req
+	req = new(http.Request)
+	*req = *orig // shallow copy, so that things like StripPrefix don't affect what we log
+
+	lh.handler.ServeHTTP(loggedWriter, orig)
 
 	// Common Log Format
 	username := "-"
