@@ -1,28 +1,16 @@
-// Package http rate decorates an gorilla.Mux and prevents too many requests being made
+// Package gorilla rate decorates an gorilla.Mux and prevents too many requests being made
 package gorilla
 
 import (
+	rl "github.com/99designs/goodies/ratelimiter/http"
 	"github.com/gorilla/mux"
-	"net/http"
 )
-
-const StatusTooManyRequests = 429
 
 type RateLimitedHandler struct {
 	*mux.Router
-	rateLimiter RateLimiter
+	rl.RateLimitedHandler
 }
 
-type RateLimiter func(*http.Request) bool
-
-func Decorate(delegate *mux.Router, rateLimiter RateLimiter) RateLimitedHandler {
-	return RateLimitedHandler{delegate, rateLimiter}
-}
-
-func (lh RateLimitedHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	if lh.rateLimiter(r) {
-		lh.Router.ServeHTTP(rw, r)
-	} else {
-		http.Error(rw, "Too many requests", StatusTooManyRequests)
-	}
+func Decorate(delegate *mux.Router, rateLimiter rl.RateLimiter) RateLimitedHandler {
+	return RateLimitedHandler{delegate, rl.Decorate(delegate, rateLimiter)}
 }
