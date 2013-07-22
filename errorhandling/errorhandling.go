@@ -1,5 +1,5 @@
 // Package errorhandling provides An HTTP decorator which recovers from `panic`
-package http
+package errorhandling
 
 import (
 	"log"
