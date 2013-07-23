@@ -60,8 +60,6 @@ func (lh RecoveringHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			lh.RecoveryHandler(r, rw, rec)
-			log.Println(lh)
-			log.Println(string(debug.Stack()))
 			if lh.Logger != nil {
 				serializedHeaders := bytes.Buffer{}
 				r.Header.Write(&serializedHeaders)
@@ -84,5 +82,6 @@ func (lh RecoveringHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 func DefaultRecoveryHandler(r *http.Request, rw http.ResponseWriter, err interface{}) {
 	log.Println("Fatal error: ", err)
+	log.Println(string(debug.Stack()))
 	http.Error(rw, "Eeek", http.StatusInternalServerError)
 }
