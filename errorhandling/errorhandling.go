@@ -3,18 +3,20 @@ package errorhandling
 
 import (
 	"bytes"
-	request_logging "github.com/99designs/goodies/http/log/request"
-	response_logging "github.com/99designs/goodies/http/log/response"
+	requestLogging "github.com/99designs/goodies/http/log/request"
+	responseLogging "github.com/99designs/goodies/http/log/response"
 	"io"
 	"log"
 	"net/http"
 	"runtime/debug"
+	"time"
 )
 
 const LogFormat = `---------------------------------------
 ****** Panic serving request ******
 Url: %s
 Method: %s
+Timestamp: %s
 ****** Headers ******
 %s
 ****** Request Body ******
@@ -43,18 +45,14 @@ func Decorate(delegate http.Handler, recoveryHandler RecoveryHandler) *Recoverin
 	return &RecoveringHandler{delegate, recoveryHandler, nil}
 }
 
-func (lh *RecoveringHandler) LogTo(out io.Writer) {
-	lh.Logger = log.New(out, "", 0)
-}
-
 func (lh RecoveringHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	var body request_logging.LoggedRequestBody
-	var writer response_logging.LoggedResponseWriter
+	var body requestLogging.LoggedRequestBody
+	var writer responseLogging.LoggedResponseWriter
 
 	if lh.Logger != nil {
 		// This isn't free, so only do it if logging is enabled.
-		body = request_logging.LogRequestBody(r)
-		writer = response_logging.LogResponseWriter(rw)
+		body = requestLogging.LogRequestBody(r)
+		writer = responseLogging.LogResponseWriter(rw)
 	}
 
 	defer func() {
@@ -67,6 +65,7 @@ func (lh RecoveringHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				lh.Logger.Printf(LogFormat,
 					r.URL.String(),
 					r.Method,
+					time.Now(),
 					string(serializedHeaders.String()),
 					string(body.Output.String()),
 					string(writer.Output.String()),
