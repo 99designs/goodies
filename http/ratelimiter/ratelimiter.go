@@ -1,5 +1,5 @@
-// Package http rate decorates an http.Handler and prevents too many requests being made
-package http
+// Package http decorates an http.Handler and prevents too many requests being made
+package ratelimiter
 
 import (
 	"fmt"

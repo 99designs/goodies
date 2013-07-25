@@ -1,8 +1,8 @@
-// Package gorilla rate decorates an gorilla.Mux and prevents too many requests being made
-package gorilla
+// Package ratelimiter decorates an gorilla.Mux and prevents too many requests being made
+package ratelimiter
 
 import (
-	rl "github.com/99designs/goodies/ratelimiter/http"
+	rl "github.com/99designs/goodies/http/ratelimiter"
 	"github.com/gorilla/mux"
 )
 

@@ -3,8 +3,8 @@ package errorhandling
 
 import (
 	"bytes"
-	"github.com/99designs/goodies/http/logged_request_body"
-	"github.com/99designs/goodies/http/logged_response_writer"
+	request_logging "github.com/99designs/goodies/http/log/request"
+	response_logging "github.com/99designs/goodies/http/log/response"
 	"io"
 	"log"
 	"net/http"
@@ -48,13 +48,13 @@ func (lh *RecoveringHandler) LogTo(out io.Writer) {
 }
 
 func (lh RecoveringHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	var body logged_request_body.LoggedRequestBody
-	var writer logged_response_writer.LoggedResponseWriter
+	var body request_logging.LoggedRequestBody
+	var writer response_logging.LoggedResponseWriter
 
 	if lh.Logger != nil {
 		// This isn't free, so only do it if logging is enabled.
-		body = logged_request_body.LogRequestBody(r)
-		writer = logged_response_writer.LogResponseWriter(rw)
+		body = request_logging.LogRequestBody(r)
+		writer = response_logging.LogResponseWriter(rw)
 	}
 
 	defer func() {

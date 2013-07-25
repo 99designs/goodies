@@ -1,4 +1,4 @@
-package logged_request_body
+package request
 
 import (
 	"bytes"

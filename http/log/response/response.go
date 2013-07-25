@@ -1,4 +1,4 @@
-package logged_response_writer
+package response
 
 import (
 	"bytes"
