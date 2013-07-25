@@ -6,20 +6,20 @@ import (
 )
 
 type LeakyBucket struct {
-	Size          uint16
-	Fill          float64
-	Leak_interval time.Duration // time.Duration for 1 unit of size to leak
-	Lastupdate    time.Time
-	Now           func() time.Time
+	Size         uint16
+	Fill         float64
+	LeakInterval time.Duration // time.Duration for 1 unit of size to leak
+	Lastupdate   time.Time
+	Now          func() time.Time
 }
 
-func NewLeakyBucket(size uint16, leak_rate time.Duration) *LeakyBucket {
+func NewLeakyBucket(size uint16, leakInterval time.Duration) *LeakyBucket {
 	bucket := LeakyBucket{
-		Size:          size,
-		Fill:          0,
-		Leak_interval: leak_rate,
-		Now:           time.Now,
-		Lastupdate:    time.Now(),
+		Size:         size,
+		Fill:         0,
+		LeakInterval: leakInterval,
+		Now:          time.Now,
+		Lastupdate:   time.Now(),
 	}
 
 	return &bucket
@@ -30,7 +30,7 @@ func (b *LeakyBucket) updateFill() {
 	if b.Fill > 0 {
 		elapsed := now.Sub(b.Lastupdate)
 
-		b.Fill -= float64(elapsed) / float64(b.Leak_interval)
+		b.Fill -= float64(elapsed) / float64(b.LeakInterval)
 		if b.Fill < 0 {
 			b.Fill = 0
 		}
@@ -59,22 +59,22 @@ func (b *LeakyBucket) DrainedAt() time.Time {
 
 // The duration until this bucket is completely drained
 func (b *LeakyBucket) TimeToDrain() time.Duration {
-	return time.Duration(b.Fill / float64(b.Leak_interval))
+	return time.Duration(b.Fill / float64(b.LeakInterval))
 }
 
 type LeakyBucketSer struct {
-	Size          uint16
-	Fill          float64
-	Leak_interval time.Duration // time.Duration for 1 unit of size to leak
-	Lastupdate    time.Time
+	Size         uint16
+	Fill         float64
+	LeakInterval time.Duration // time.Duration for 1 unit of size to leak
+	Lastupdate   time.Time
 }
 
 func (b *LeakyBucket) Serialise() *LeakyBucketSer {
 	bucket := LeakyBucketSer{
-		Size:          b.Size,
-		Fill:          b.Fill,
-		Leak_interval: b.Leak_interval,
-		Lastupdate:    b.Lastupdate,
+		Size:         b.Size,
+		Fill:         b.Fill,
+		LeakInterval: b.LeakInterval,
+		Lastupdate:   b.Lastupdate,
 	}
 
 	return &bucket
@@ -82,11 +82,11 @@ func (b *LeakyBucket) Serialise() *LeakyBucketSer {
 
 func (b *LeakyBucketSer) DeSerialise() *LeakyBucket {
 	bucket := LeakyBucket{
-		Size:          b.Size,
-		Fill:          b.Fill,
-		Leak_interval: b.Leak_interval,
-		Lastupdate:    b.Lastupdate,
-		Now:           time.Now,
+		Size:         b.Size,
+		Fill:         b.Fill,
+		LeakInterval: b.LeakInterval,
+		Lastupdate:   b.Lastupdate,
+		Now:          time.Now,
 	}
 
 	return &bucket
