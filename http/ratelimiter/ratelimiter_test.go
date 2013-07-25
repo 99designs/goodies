@@ -24,10 +24,10 @@ func TestDecorator(t *testing.T) {
 
 	res, err := http.Get(ts.URL + "/foo/bar")
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	if retryAfter := res.Header.Get("Retry-After"); retryAfter != "60" {
-		t.Fatalf("Expected retry-after to be '60' but it was '%s'", retryAfter)
+		t.Errorf("Expected retry-after to be '60' but it was '%s'", retryAfter)
 	}
 	res.Body.Close()
 }
