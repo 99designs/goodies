@@ -19,12 +19,12 @@ const (
 )
 
 type PostmarkMailer struct {
-	api_key string
-	Tag     string
+	apiKey string
+	Tag    string
 }
 
-func NewMailer(api_key string) mailer.Mailer {
-	return &PostmarkMailer{api_key: api_key}
+func NewMailer(apiKey string) mailer.Mailer {
+	return &PostmarkMailer{apiKey: apiKey}
 }
 
 type postmarkEmail struct {
@@ -87,7 +87,7 @@ func (t *PostmarkMailer) buildRequest(e mailer.Email) (req *http.Request, err er
 	}
 	req.Header.Set("Content-Type", jsonMimeType)
 	req.Header.Set("Accept", jsonMimeType)
-	req.Header.Set(apiKeyHeader, t.api_key)
+	req.Header.Set(apiKeyHeader, t.apiKey)
 	return req, nil
 }
 
