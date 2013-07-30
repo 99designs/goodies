@@ -46,25 +46,28 @@ func TestPour(t *testing.T) {
 
 func TestTimeSinceLastUpdate(t *testing.T) {
 	bucket := NewLeakyBucket(60, time.Second)
+	bucket.Now = func() time.Time { return time.Unix(1, 0) }
 	bucket.Pour(1)
-	bucket.Lastupdate = bucket.Lastupdate.Add(-time.Second)
+	bucket.Now = func() time.Time { return time.Unix(2, 0) }
+
 	sinceLast := bucket.TimeSinceLastUpdate()
-	if sinceLast < time.Second {
-		t.Error("Expected time since last update to be less than 1 second, got %+v", sinceLast)
-	}
-	if sinceLast > (time.Millisecond * 1100) {
-		t.Error("Expected time since last update to be about 1 second, got %+v", sinceLast)
+	if sinceLast != time.Second*1 {
+		t.Error("Expected time since last update to be less than 1 second, got %d", sinceLast)
 	}
 }
 
 func TestTimeToDrain(t *testing.T) {
 	bucket := NewLeakyBucket(60, time.Second)
+	bucket.Now = func() time.Time { return time.Unix(1, 0) }
 	bucket.Pour(10)
-	ttd := bucket.TimeToDrain()
-	if ttd > time.Second*10 {
-		t.Error("Time to drain should be <= 10 seconds")
+
+	if bucket.TimeToDrain() != time.Second*10 {
+		t.Error("Time to drain should be 10 seconds")
 	}
-	if ttd <= time.Second*9 {
-		t.Error("Time to drain should be > 9 seconds")
+
+	bucket.Now = func() time.Time { return time.Unix(2, 0) }
+
+	if bucket.TimeToDrain() != time.Second*9 {
+		t.Error("Time to drain should be 9 seconds")
 	}
 }

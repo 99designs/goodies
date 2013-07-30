@@ -54,17 +54,16 @@ func (b *LeakyBucket) Pour(amount uint16) bool {
 
 // The time at which this bucket will be completely drained
 func (b *LeakyBucket) DrainedAt() time.Time {
-	return time.Now().Add(b.TimeToDrain())
+	return b.Lastupdate.Add(time.Duration(b.Fill * float64(b.LeakInterval)))
 }
 
 // The duration until this bucket is completely drained
 func (b *LeakyBucket) TimeToDrain() time.Duration {
-	b.updateFill()
-	return time.Duration(b.Fill * float64(b.LeakInterval))
+	return b.DrainedAt().Sub(b.Now())
 }
 
 func (b *LeakyBucket) TimeSinceLastUpdate() time.Duration {
-	return time.Now().Sub(b.Lastupdate)
+	return b.Now().Sub(b.Lastupdate)
 }
 
 type LeakyBucketSer struct {
