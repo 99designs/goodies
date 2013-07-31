@@ -97,16 +97,8 @@ func (this *commonLogData) String() string {
 	)
 }
 
-// Extract username
-func usernameFromReq(req http.Request) string {
-	if req.URL.User != nil {
-		if name := req.URL.User.Username(); name != "" {
-			return name
-		}
-	}
-	return "-"
-}
-
+// Type CommonLogUsingForwardedFor logs in CLF using
+// the X-Forwarded-For header in place of the remote IP
 type CommonLogUsingForwardedFor struct {
 	CommonLogData
 }
@@ -124,6 +116,8 @@ type CommonLogStrippingQueries struct {
 	CommonLogData
 }
 
+// Type CommonLogUsingForwardedFor logs in CLF but
+// excludes query params from the log
 func NewCommonLogStrippingQueries() CommonLogData {
 	return &CommonLogStrippingQueries{NewDefaultCommonLogData()}
 }
@@ -131,4 +125,14 @@ func NewCommonLogStrippingQueries() CommonLogData {
 func (this *CommonLogStrippingQueries) SetRequest(req http.Request) {
 	req.RequestURI = req.URL.Path
 	this.CommonLogData.SetRequest(req)
+}
+
+// Extract username from the request url
+func usernameFromReq(req http.Request) string {
+	if req.URL.User != nil {
+		if name := req.URL.User.Username(); name != "" {
+			return name
+		}
+	}
+	return "-"
 }
