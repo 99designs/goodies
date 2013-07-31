@@ -12,34 +12,34 @@ import (
 )
 
 type commonLogHandler struct {
-	handler   http.Handler
-	logger    *log.Logger
-	logDataFn CommonLogDataFn
+	handler    http.Handler
+	logger     *log.Logger
+	newLogData func() CommonLogData
 }
 
 // CommonLogHandler returns a handler that serves HTTP requests
 // If a logger is not provided, stdout will be used
-func CommonLogHandler(logger *log.Logger, h http.Handler, logDataFn CommonLogDataFn) http.Handler {
+func CommonLogHandler(logger *log.Logger, h http.Handler, newLogData func() CommonLogData) http.Handler {
 	if logger == nil {
 		logger = log.New(os.Stdout, "", 0)
 	}
-	if logDataFn == nil {
-		logDataFn = CommonLogDataFn(NewDefaultCommonLogData)
+	if newLogData == nil {
+		newLogData = NewDefaultCommonLogData
 	}
 	return &commonLogHandler{
-		handler:   h,
-		logger:    logger,
-		logDataFn: logDataFn,
+		handler:    h,
+		logger:     logger,
+		newLogData: newLogData,
 	}
 }
 
 // ServeHTTP logs the request and response data to Common Log Format
 func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// grab the data we need before passing it to ServeHTTP
-	// since ServeHTTP could modify that data
-	data := lh.logDataFn()
+	data := lh.newLogData()
 	// decorate the writer so we can capture the status and size
 	loggedWriter := response.LogResponseMetadata(w)
+	// grab the data we need before passing it to ServeHTTP
+	// since ServeHTTP could modify that data
 	data.SetRequest(*req)
 	lh.handler.ServeHTTP(loggedWriter, req)
 
@@ -52,7 +52,6 @@ type CommonLogData interface {
 	SetResponseWriter(response.ResponseMetadataLogger)
 	String() string
 }
-type CommonLogDataFn func() CommonLogData
 
 type commonLogData struct {
 	StartTime      time.Time
@@ -112,12 +111,12 @@ func (this *CommonLogUsingForwardedFor) SetRequest(req http.Request) {
 	this.CommonLogData.SetRequest(req)
 }
 
+// Type CommonLogUsingForwardedFor logs in CLF but
+// excludes query params from the log
 type CommonLogStrippingQueries struct {
 	CommonLogData
 }
 
-// Type CommonLogUsingForwardedFor logs in CLF but
-// excludes query params from the log
 func NewCommonLogStrippingQueries() CommonLogData {
 	return &CommonLogStrippingQueries{NewDefaultCommonLogData()}
 }
