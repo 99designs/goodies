@@ -9,74 +9,50 @@ import (
 	"time"
 )
 
-const (
-	UseXForwardedAddress = 1 << iota
-	StripURLQuery
-)
-
-type CommonLogHandler struct {
+type commonLogHandler struct {
 	handler http.Handler
 	logger  *log.Logger
-	flags   int
 }
 
-// flags_arr is so that no code is broken by an API change
-func DefaultCommonLogHandler(h http.Handler, flags_arr ...int) http.Handler {
-	flags := 0
-	if len(flags_arr) > 0 {
-		flags = flags_arr[0]
+// CommonLogHandler returns a handler that serves HTTP requests
+// If a logger is not provided, stdout will be used
+func CommonLogHandler(logger *log.Logger, h http.Handler) http.Handler {
+	if logger == nil {
+		logger = log.New(os.Stdout, "", 0)
 	}
-	return &CommonLogHandler{
-		handler: h,
-		logger:  log.New(os.Stderr, "", 0),
-		flags:   flags,
-	}
-}
-
-func NewCommonLogHandler(logger *log.Logger, h http.Handler, flags_arr ...int) http.Handler {
-	flags := 0
-	if len(flags_arr) > 0 {
-		flags = flags_arr[0]
-	}
-	return &CommonLogHandler{
+	return &commonLogHandler{
 		handler: h,
 		logger:  logger,
-		flags:   flags,
 	}
 }
 
-func (lh *CommonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+// ServeHTTP logs the request and response data to Common Log Format
+func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// grab the data we need before passing it to ServeHTTP
 	startTime := time.Now()
+	reqRemoteAddr := req.RemoteAddr
+	reqURLUserUsername := "-"
+	if req.URL.User != nil {
+		if name := req.URL.User.Username(); name != "" {
+			reqURLUserUsername = name
+		}
+	}
+	reqMethod := req.Method
+	reqRequestURI := req.RequestURI
+	reqProto := req.Proto
 
+	// decorate the writer so we can capture the status and size
 	loggedWriter := &responseLogger{w: w}
 	lh.handler.ServeHTTP(loggedWriter, req)
 
 	// Common Log Format
-	username := "-"
-	if req.URL.User != nil {
-		if name := req.URL.User.Username(); name != "" {
-			username = name
-		}
-	}
-	addr := req.RemoteAddr
-	if (lh.flags & UseXForwardedAddress) != 0 {
-		ip := req.Header.Get("X-Forwarded-For")
-		port := req.Header.Get("X-Forwarded-Port")
-		if ip != "" && port != "" {
-			addr = ip + ":" + port
-		}
-	}
-	uri := req.RequestURI
-	if (lh.flags & StripURLQuery) != 0 {
-		uri = req.URL.Path
-	}
 	lh.logger.Printf("%s %s - [%s] \"%s %s %s\" %d %d",
-		addr,
-		username,
+		reqRemoteAddr,
+		reqURLUserUsername,
 		startTime.Format("02/Jan/2006:15:04:05 -0700"),
-		req.Method,
-		uri,
-		req.Proto,
+		reqMethod,
+		reqRequestURI,
+		reqProto,
 		loggedWriter.status,
 		loggedWriter.size,
 	)
