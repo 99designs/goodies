@@ -46,7 +46,7 @@ func Decorate(delegate http.Handler, recoveryHandler RecoveryHandler) *Recoverin
 
 func (lh RecoveringHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	var body requestLogging.LoggedRequestBody
-	var writer responseLogging.LoggedResponseBodyWriter
+	var writer *responseLogging.LoggedResponseBodyWriter
 
 	if lh.Logger != nil {
 		// This isn't free, so only do it if logging is enabled.

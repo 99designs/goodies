@@ -12,24 +12,24 @@ type LoggedResponseBodyWriter struct {
 	multi  io.Writer
 }
 
-func LogResponseBody(rw http.ResponseWriter) LoggedResponseBodyWriter {
+func LogResponseBody(rw http.ResponseWriter) *LoggedResponseBodyWriter {
 	output := bytes.Buffer{}
-	return LoggedResponseBodyWriter{
+	return &LoggedResponseBodyWriter{
 		rw:     rw,
 		Output: output,
 		multi:  io.MultiWriter(&output, rw),
 	}
 }
 
-func (this LoggedResponseBodyWriter) Header() http.Header {
+func (this *LoggedResponseBodyWriter) Header() http.Header {
 	return this.rw.Header()
 }
 
-func (this LoggedResponseBodyWriter) Write(p []byte) (int, error) {
+func (this *LoggedResponseBodyWriter) Write(p []byte) (int, error) {
 	return this.multi.Write(p)
 }
 
-func (this LoggedResponseBodyWriter) WriteHeader(h int) {
+func (this *LoggedResponseBodyWriter) WriteHeader(h int) {
 	this.rw.WriteHeader(h)
 }
 
@@ -39,17 +39,17 @@ type ResponseMetadataLogger struct {
 	Size   int
 }
 
-func LogResponseMetadata(rw http.ResponseWriter) ResponseMetadataLogger {
-	return ResponseMetadataLogger{
+func LogResponseMetadata(rw http.ResponseWriter) *ResponseMetadataLogger {
+	return &ResponseMetadataLogger{
 		rw: rw,
 	}
 }
 
-func (l ResponseMetadataLogger) Header() http.Header {
+func (l *ResponseMetadataLogger) Header() http.Header {
 	return l.rw.Header()
 }
 
-func (l ResponseMetadataLogger) Write(b []byte) (int, error) {
+func (l *ResponseMetadataLogger) Write(b []byte) (int, error) {
 	if l.Status == 0 {
 		// The status will be StatusOK if WriteHeader has not been called yet
 		l.Status = http.StatusOK
@@ -59,7 +59,7 @@ func (l ResponseMetadataLogger) Write(b []byte) (int, error) {
 	return size, err
 }
 
-func (l ResponseMetadataLogger) WriteHeader(s int) {
+func (l *ResponseMetadataLogger) WriteHeader(s int) {
 	l.rw.WriteHeader(s)
 	l.Status = s
 }

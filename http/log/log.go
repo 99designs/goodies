@@ -12,19 +12,24 @@ import (
 )
 
 type commonLogHandler struct {
-	handler http.Handler
-	logger  *log.Logger
+	handler   http.Handler
+	logger    *log.Logger
+	logDataFn CommonLogDataFn
 }
 
 // CommonLogHandler returns a handler that serves HTTP requests
 // If a logger is not provided, stdout will be used
-func CommonLogHandler(logger *log.Logger, h http.Handler) http.Handler {
+func CommonLogHandler(logger *log.Logger, h http.Handler, logDataFn CommonLogDataFn) http.Handler {
 	if logger == nil {
 		logger = log.New(os.Stdout, "", 0)
 	}
+	if logDataFn == nil {
+		logDataFn = CommonLogDataFn(NewDefaultCommonLogData)
+	}
 	return &commonLogHandler{
-		handler: h,
-		logger:  logger,
+		handler:   h,
+		logger:    logger,
+		logDataFn: logDataFn,
 	}
 }
 
@@ -32,18 +37,24 @@ func CommonLogHandler(logger *log.Logger, h http.Handler) http.Handler {
 func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// grab the data we need before passing it to ServeHTTP
 	// since ServeHTTP could modify that data
-	data := NewCommonLogData(*req)
-
+	data := lh.logDataFn()
 	// decorate the writer so we can capture the status and size
 	loggedWriter := response.LogResponseMetadata(w)
+	data.SetRequest(*req)
 	lh.handler.ServeHTTP(loggedWriter, req)
 
-	data.ResponseStatus = loggedWriter.Status
-	data.ResponseSize = loggedWriter.Size
+	data.SetResponseWriter(*loggedWriter)
 	lh.logger.Println(data.String())
 }
 
-type CommonLogData struct {
+type CommonLogData interface {
+	SetRequest(http.Request)
+	SetResponseWriter(response.ResponseMetadataLogger)
+	String() string
+}
+type CommonLogDataFn func() CommonLogData
+
+type commonLogData struct {
 	StartTime      time.Time
 	RemoteAddr     string
 	Username       string
@@ -54,18 +65,26 @@ type CommonLogData struct {
 	ResponseSize   int
 }
 
-func NewCommonLogData(req http.Request) CommonLogData {
-	return CommonLogData{
-		StartTime:  time.Now(),
-		RemoteAddr: req.RemoteAddr,
-		Username:   usernameFromReq(req),
-		Method:     req.Method,
-		Uri:        req.RequestURI,
-		Proto:      req.Proto,
+func NewDefaultCommonLogData() CommonLogData {
+	return &commonLogData{
+		StartTime: time.Now(),
 	}
 }
 
-func (this CommonLogData) String() string {
+func (this *commonLogData) SetRequest(req http.Request) {
+	this.RemoteAddr = req.RemoteAddr
+	this.Username = usernameFromReq(req)
+	this.Method = req.Method
+	this.Uri = req.RequestURI
+	this.Proto = req.Proto
+}
+
+func (this *commonLogData) SetResponseWriter(rw response.ResponseMetadataLogger) {
+	this.ResponseStatus = rw.Status
+	this.ResponseSize = rw.Size
+}
+
+func (this *commonLogData) String() string {
 	return fmt.Sprintf("%s %s - [%s] \"%s %s %s\" %d %d",
 		this.RemoteAddr,
 		this.Username,
@@ -86,4 +105,30 @@ func usernameFromReq(req http.Request) string {
 		}
 	}
 	return "-"
+}
+
+type CommonLogUsingForwardedFor struct {
+	CommonLogData
+}
+
+func NewCommonLogUsingForwardedFor() CommonLogData {
+	return &CommonLogUsingForwardedFor{NewDefaultCommonLogData()}
+}
+
+func (this *CommonLogUsingForwardedFor) SetRequest(req http.Request) {
+	req.RemoteAddr = req.Header.Get("X-Forwarded-For")
+	this.CommonLogData.SetRequest(req)
+}
+
+type CommonLogStrippingQueries struct {
+	CommonLogData
+}
+
+func NewCommonLogStrippingQueries() CommonLogData {
+	return &CommonLogStrippingQueries{NewDefaultCommonLogData()}
+}
+
+func (this *CommonLogStrippingQueries) SetRequest(req http.Request) {
+	req.RequestURI = req.URL.Path
+	this.CommonLogData.SetRequest(req)
 }
