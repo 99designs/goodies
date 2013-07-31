@@ -3,6 +3,7 @@
 package log
 
 import (
+	"github.com/99designs/goodies/http/log/response"
 	"log"
 	"net/http"
 	"os"
@@ -42,7 +43,7 @@ func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 	reqProto := req.Proto
 
 	// decorate the writer so we can capture the status and size
-	loggedWriter := &responseLogger{w: w}
+	loggedWriter := response.LogResponseMetadata(w)
 	lh.handler.ServeHTTP(loggedWriter, req)
 
 	// Common Log Format
@@ -53,32 +54,7 @@ func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 		reqMethod,
 		reqRequestURI,
 		reqProto,
-		loggedWriter.status,
-		loggedWriter.size,
+		loggedWriter.Status,
+		loggedWriter.Size,
 	)
-}
-
-type responseLogger struct {
-	w      http.ResponseWriter
-	status int
-	size   int
-}
-
-func (l *responseLogger) Header() http.Header {
-	return l.w.Header()
-}
-
-func (l *responseLogger) Write(b []byte) (int, error) {
-	if l.status == 0 {
-		// The status will be StatusOK if WriteHeader has not been called yet
-		l.status = http.StatusOK
-	}
-	size, err := l.w.Write(b)
-	l.size += size
-	return size, err
-}
-
-func (l *responseLogger) WriteHeader(s int) {
-	l.w.WriteHeader(s)
-	l.status = s
 }

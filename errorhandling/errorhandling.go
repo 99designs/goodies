@@ -5,7 +5,6 @@ import (
 	"bytes"
 	requestLogging "github.com/99designs/goodies/http/log/request"
 	responseLogging "github.com/99designs/goodies/http/log/response"
-	"io"
 	"log"
 	"net/http"
 	"runtime/debug"
@@ -47,12 +46,12 @@ func Decorate(delegate http.Handler, recoveryHandler RecoveryHandler) *Recoverin
 
 func (lh RecoveringHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	var body requestLogging.LoggedRequestBody
-	var writer responseLogging.LoggedResponseWriter
+	var writer responseLogging.LoggedResponseBodyWriter
 
 	if lh.Logger != nil {
 		// This isn't free, so only do it if logging is enabled.
 		body = requestLogging.LogRequestBody(r)
-		writer = responseLogging.LogResponseWriter(rw)
+		writer = responseLogging.LogResponseBody(rw)
 	}
 
 	defer func() {
