@@ -3,6 +3,8 @@
 package log
 
 import (
+	"fmt"
+	"github.com/99designs/goodies/http/log/response"
 	"log"
 	"net/http"
 	"os"
@@ -10,75 +12,127 @@ import (
 )
 
 type commonLogHandler struct {
-	handler http.Handler
-	logger  *log.Logger
+	handler   http.Handler
+	logger    *log.Logger
+	logDataFn CommonLogDataFn
 }
 
 // CommonLogHandler returns a handler that serves HTTP requests
 // If a logger is not provided, stdout will be used
-func CommonLogHandler(logger *log.Logger, h http.Handler) http.Handler {
+func CommonLogHandler(logger *log.Logger, h http.Handler, logDataFn CommonLogDataFn) http.Handler {
 	if logger == nil {
 		logger = log.New(os.Stdout, "", 0)
 	}
+	if logDataFn == nil {
+		logDataFn = CommonLogDataFn(NewDefaultCommonLogData)
+	}
 	return &commonLogHandler{
-		handler: h,
-		logger:  logger,
+		handler:   h,
+		logger:    logger,
+		logDataFn: logDataFn,
 	}
 }
 
 // ServeHTTP logs the request and response data to Common Log Format
 func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// grab the data we need before passing it to ServeHTTP
-	startTime := time.Now()
-	reqRemoteAddr := req.RemoteAddr
-	reqURLUserUsername := "-"
-	if req.URL.User != nil {
-		if name := req.URL.User.Username(); name != "" {
-			reqURLUserUsername = name
-		}
-	}
-	reqMethod := req.Method
-	reqRequestURI := req.RequestURI
-	reqProto := req.Proto
-
+	// since ServeHTTP could modify that data
+	data := lh.logDataFn()
 	// decorate the writer so we can capture the status and size
-	loggedWriter := &responseLogger{w: w}
+	loggedWriter := response.LogResponseMetadata(w)
+	data.SetRequest(*req)
 	lh.handler.ServeHTTP(loggedWriter, req)
 
-	// Common Log Format
-	lh.logger.Printf("%s %s - [%s] \"%s %s %s\" %d %d",
-		reqRemoteAddr,
-		reqURLUserUsername,
-		startTime.Format("02/Jan/2006:15:04:05 -0700"),
-		reqMethod,
-		reqRequestURI,
-		reqProto,
-		loggedWriter.status,
-		loggedWriter.size,
+	data.SetResponseWriter(*loggedWriter)
+	lh.logger.Println(data.String())
+}
+
+type CommonLogData interface {
+	SetRequest(http.Request)
+	SetResponseWriter(response.ResponseMetadataLogger)
+	String() string
+}
+type CommonLogDataFn func() CommonLogData
+
+type commonLogData struct {
+	StartTime      time.Time
+	RemoteAddr     string
+	Username       string
+	Method         string
+	Uri            string
+	Proto          string
+	ResponseStatus int
+	ResponseSize   int
+}
+
+func NewDefaultCommonLogData() CommonLogData {
+	return &commonLogData{
+		StartTime: time.Now(),
+	}
+}
+
+func (this *commonLogData) SetRequest(req http.Request) {
+	this.RemoteAddr = req.RemoteAddr
+	this.Username = usernameFromReq(req)
+	this.Method = req.Method
+	this.Uri = req.RequestURI
+	this.Proto = req.Proto
+}
+
+func (this *commonLogData) SetResponseWriter(rw response.ResponseMetadataLogger) {
+	this.ResponseStatus = rw.Status
+	this.ResponseSize = rw.Size
+}
+
+func (this *commonLogData) String() string {
+	return fmt.Sprintf("%s %s - [%s] \"%s %s %s\" %d %d",
+		this.RemoteAddr,
+		this.Username,
+		this.StartTime.Format("02/Jan/2006:15:04:05 -0700"),
+		this.Method,
+		this.Uri,
+		this.Proto,
+		this.ResponseStatus,
+		this.ResponseSize,
 	)
 }
 
-type responseLogger struct {
-	w      http.ResponseWriter
-	status int
-	size   int
+// Type CommonLogUsingForwardedFor logs in CLF using
+// the X-Forwarded-For header in place of the remote IP
+type CommonLogUsingForwardedFor struct {
+	CommonLogData
 }
 
-func (l *responseLogger) Header() http.Header {
-	return l.w.Header()
+func NewCommonLogUsingForwardedFor() CommonLogData {
+	return &CommonLogUsingForwardedFor{NewDefaultCommonLogData()}
 }
 
-func (l *responseLogger) Write(b []byte) (int, error) {
-	if l.status == 0 {
-		// The status will be StatusOK if WriteHeader has not been called yet
-		l.status = http.StatusOK
+func (this *CommonLogUsingForwardedFor) SetRequest(req http.Request) {
+	req.RemoteAddr = req.Header.Get("X-Forwarded-For")
+	this.CommonLogData.SetRequest(req)
+}
+
+type CommonLogStrippingQueries struct {
+	CommonLogData
+}
+
+// Type CommonLogUsingForwardedFor logs in CLF but
+// excludes query params from the log
+func NewCommonLogStrippingQueries() CommonLogData {
+	return &CommonLogStrippingQueries{NewDefaultCommonLogData()}
+}
+
+func (this *CommonLogStrippingQueries) SetRequest(req http.Request) {
+	req.RequestURI = req.URL.Path
+	this.CommonLogData.SetRequest(req)
+}
+
+// Extract username from the request url
+func usernameFromReq(req http.Request) string {
+	if req.URL.User != nil {
+		if name := req.URL.User.Username(); name != "" {
+			return name
+		}
 	}
-	size, err := l.w.Write(b)
-	l.size += size
-	return size, err
-}
-
-func (l *responseLogger) WriteHeader(s int) {
-	l.w.WriteHeader(s)
-	l.status = s
+	return "-"
 }
