@@ -3,6 +3,7 @@
 package log
 
 import (
+	"fmt"
 	"github.com/99designs/goodies/http/log/response"
 	"log"
 	"net/http"
@@ -30,32 +31,55 @@ func CommonLogHandler(logger *log.Logger, h http.Handler) http.Handler {
 // ServeHTTP logs the request and response data to Common Log Format
 func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// grab the data we need before passing it to ServeHTTP
-	startTime := time.Now()
-	reqRemoteAddr := req.RemoteAddr
-	reqURLUserUsername := usernameFromReq(*req)
-	reqMethod := req.Method
-	reqRequestURI := req.RequestURI
-	reqProto := req.Proto
+	// since ServeHTTP could modify that data
+	data := NewCommonLogData(*req)
 
 	// decorate the writer so we can capture the status and size
 	loggedWriter := response.LogResponseMetadata(w)
 	lh.handler.ServeHTTP(loggedWriter, req)
 
-	// Common Log Format
-	lh.logger.Printf("%s %s - [%s] \"%s %s %s\" %d %d",
-		reqRemoteAddr,
-		reqURLUserUsername,
-		startTime.Format("02/Jan/2006:15:04:05 -0700"),
-		reqMethod,
-		reqRequestURI,
-		reqProto,
-		loggedWriter.Status,
-		loggedWriter.Size,
+	data.ResponseStatus = loggedWriter.Status
+	data.ResponseSize = loggedWriter.Size
+	lh.logger.Println(data.String())
+}
+
+type CommonLogData struct {
+	StartTime      time.Time
+	RemoteAddr     string
+	Username       string
+	Method         string
+	Uri            string
+	Proto          string
+	ResponseStatus int
+	ResponseSize   int
+}
+
+func NewCommonLogData(req http.Request) CommonLogData {
+	return CommonLogData{
+		StartTime:  time.Now(),
+		RemoteAddr: req.RemoteAddr,
+		Username:   usernameFromReq(req),
+		Method:     req.Method,
+		Uri:        req.RequestURI,
+		Proto:      req.Proto,
+	}
+}
+
+func (this CommonLogData) String() string {
+	return fmt.Sprintf("%s %s - [%s] \"%s %s %s\" %d %d",
+		this.RemoteAddr,
+		this.Username,
+		this.StartTime.Format("02/Jan/2006:15:04:05 -0700"),
+		this.Method,
+		this.Uri,
+		this.Proto,
+		this.ResponseStatus,
+		this.ResponseSize,
 	)
 }
 
 // Extract username
-func usernameFromReq(r http.Request) string {
+func usernameFromReq(req http.Request) string {
 	if req.URL.User != nil {
 		if name := req.URL.User.Username(); name != "" {
 			return name
