@@ -11,6 +11,7 @@ import (
 
 func TestCommonLogHandler(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = "/changed"
 		w.Header().Set("X-Path", r.URL.Path)
 		w.Write([]byte("Testing 1 2 3"))
 	})
