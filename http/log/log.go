@@ -32,12 +32,7 @@ func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 	// grab the data we need before passing it to ServeHTTP
 	startTime := time.Now()
 	reqRemoteAddr := req.RemoteAddr
-	reqURLUserUsername := "-"
-	if req.URL.User != nil {
-		if name := req.URL.User.Username(); name != "" {
-			reqURLUserUsername = name
-		}
-	}
+	reqURLUserUsername := usernameFromReq(*req)
 	reqMethod := req.Method
 	reqRequestURI := req.RequestURI
 	reqProto := req.Proto
@@ -57,4 +52,14 @@ func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 		loggedWriter.Status,
 		loggedWriter.Size,
 	)
+}
+
+// Extract username
+func usernameFromReq(r http.Request) string {
+	if req.URL.User != nil {
+		if name := req.URL.User.Username(); name != "" {
+			return name
+		}
+	}
+	return "-"
 }
