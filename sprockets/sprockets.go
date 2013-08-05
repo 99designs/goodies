@@ -24,21 +24,21 @@ type ViewHelper struct {
 }
 
 func (vh *ViewHelper) StylesheetLinkTag(name string) (template.HTML, error) {
-	var attr template.HTMLAttr
-	url, err := vh.AssetPipeline.GetAssetUrl(name)
-	if err != nil {
-		return template.HTML(""), err
-	}
-	attr = template.HTMLAttr(url)
-	return template.HTML(`<link href="` + template.HTMLEscaper(attr) + `" rel="stylesheet">`), nil
+	url, err := vh.asset_url(name)
+	return template.HTML(`<link href="` + template.HTMLEscaper(url) + `" rel="stylesheet">`), err
+}
+
+func (vh *ViewHelper) InlineStylesheet(name string) (template.HTML, error) {
+	content, err := vh.AssetPipeline.GetAssetContents(name)
+	return template.HTML(`<style>` + string(content) + `</style>`), err
 }
 
 func (vh *ViewHelper) JavascriptTag(name string) (template.HTML, error) {
-	var attr template.HTMLAttr
+	url, err := vh.asset_url(name)
+	return template.HTML(`<script src="` + template.HTMLEscaper(url) + `" type="text/javascript"></script>`), err
+}
+
+func (vh *ViewHelper) asset_url(name string) (template.HTMLAttr, error) {
 	url, err := vh.AssetPipeline.GetAssetUrl(name)
-	if err != nil {
-		return template.HTML(""), err
-	}
-	attr = template.HTMLAttr(url)
-	return template.HTML(`<script src="` + template.HTMLEscaper(attr) + `" type="text/javascript"></script>`), nil
+	return template.HTMLAttr(url), err
 }
