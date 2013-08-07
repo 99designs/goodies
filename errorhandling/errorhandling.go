@@ -37,11 +37,11 @@ type RecoveringHandler struct {
 
 type RecoveryHandler func(*http.Request, http.ResponseWriter, interface{})
 
-func Decorate(delegate http.Handler, recoveryHandler RecoveryHandler) *RecoveringHandler {
+func Decorate(delegate http.Handler, recoveryHandler RecoveryHandler, logger *log.Logger) *RecoveringHandler {
 	if recoveryHandler == nil {
 		recoveryHandler = DefaultRecoveryHandler
 	}
-	return &RecoveringHandler{delegate, recoveryHandler, nil}
+	return &RecoveringHandler{delegate, recoveryHandler, logger}
 }
 
 func (lh RecoveringHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
