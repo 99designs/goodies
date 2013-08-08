@@ -1,5 +1,5 @@
-// Package errorhandling provides An HTTP decorator which recovers from `panic`
-package errorhandling
+// Package panichandler provides An HTTP decorator which recovers from `panic`
+package panichandler
 
 import (
 	"bytes"
@@ -29,26 +29,28 @@ Timestamp: %s
 ---------------------------------------
 `
 
-type RecoveringHandler struct {
-	http.Handler
-	RecoveryHandler
-	*log.Logger
+type PanicHandler struct {
+	handler  http.Handler
+	recovery http.HandlerFunc
+	logger   *log.Logger
 }
 
-type RecoveryHandler func(*http.Request, http.ResponseWriter, interface{})
-
-func Decorate(delegate http.Handler, recoveryHandler RecoveryHandler, logger *log.Logger) *RecoveringHandler {
-	if recoveryHandler == nil {
-		recoveryHandler = DefaultRecoveryHandler
+func Decorate(delegate http.Handler, recovery http.HandlerFunc, logger *log.Logger) *PanicHandler {
+	if recovery == nil {
+		recovery = DefaultRecoveryHandler
 	}
-	return &RecoveringHandler{delegate, recoveryHandler, logger}
+	return &PanicHandler{
+		handler:  delegate,
+		recovery: recovery,
+		logger:   logger,
+	}
 }
 
-func (lh RecoveringHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+func (lh PanicHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	var body requestLogging.LoggedRequestBody
 	var writer *responseLogging.LoggedResponseBodyWriter
 
-	if lh.Logger != nil {
+	if lh.logger != nil {
 		// This isn't free, so only do it if logging is enabled.
 		body = requestLogging.LogRequestBody(r)
 		writer = responseLogging.LogResponseBody(rw)
@@ -56,12 +58,13 @@ func (lh RecoveringHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		if rec := recover(); rec != nil {
-			lh.RecoveryHandler(r, rw, rec)
-			if lh.Logger != nil {
+			lh.recovery(rw, r)
+
+			if lh.logger != nil {
 				serializedHeaders := bytes.Buffer{}
 				r.Header.Write(&serializedHeaders)
 
-				lh.Logger.Printf(LogFormat,
+				lh.logger.Printf(LogFormat,
 					r.URL.String(),
 					r.Method,
 					time.Now(),
@@ -75,11 +78,9 @@ func (lh RecoveringHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	lh.Handler.ServeHTTP(writer, r)
+	lh.handler.ServeHTTP(writer, r)
 }
 
-func DefaultRecoveryHandler(r *http.Request, rw http.ResponseWriter, err interface{}) {
-	log.Println("Fatal error: ", err)
-	log.Println(string(debug.Stack()))
-	http.Error(rw, "Eeek", http.StatusInternalServerError)
+func DefaultRecoveryHandler(rw http.ResponseWriter, r *http.Request) {
+	http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
 }
