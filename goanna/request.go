@@ -34,3 +34,7 @@ func (r *Request) BodyData() []byte {
 
 	return r.bodyData
 }
+
+func (r *Request) QueryValue(key string) string {
+	return r.URL.Query().Get(key)
+}

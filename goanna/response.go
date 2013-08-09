@@ -137,6 +137,13 @@ func (r *RedirectResponse) Send(w http.ResponseWriter) {
 	w.WriteHeader(r.code)
 }
 
+func (r *RedirectResponse) Target() string {
+	return r.urlStr
+}
+func (r *RedirectResponse) Code() int {
+	return r.code
+}
+
 func NewJsonResponse(data interface{}) *OkResponse {
 	json, err := json.Marshal(data)
 	if err != nil {
