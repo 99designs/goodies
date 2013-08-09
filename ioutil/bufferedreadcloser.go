@@ -2,7 +2,6 @@ package ioutil
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 )
@@ -24,13 +23,11 @@ func NewBufferedReadCloser(r io.ReadCloser) BufferedReadCloser {
 }
 
 func (this BufferedReadCloser) Close() error {
-	this.ReadAll() // finish reading before we close
+	ioutil.ReadAll(this.Reader) // finish reading everything before we close
 	return this.rc.Close()
 }
 
 func (this BufferedReadCloser) ReadAll() []byte {
-	_, err := ioutil.ReadAll(this.Reader)
-	fmt.Println(err)
-
+	ioutil.ReadAll(this.Reader)
 	return this.buffer.Bytes()
 }
