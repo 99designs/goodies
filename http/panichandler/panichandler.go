@@ -3,8 +3,8 @@ package panichandler
 
 import (
 	"bytes"
-	requestLogging "github.com/99designs/goodies/http/log/request"
 	responseLogging "github.com/99designs/goodies/http/log/response"
+	gioutil "github.com/99designs/goodies/ioutil"
 	"log"
 	"net/http"
 	"runtime/debug"
@@ -47,12 +47,13 @@ func Decorate(delegate http.Handler, recovery http.HandlerFunc, logger *log.Logg
 }
 
 func (lh PanicHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	var body requestLogging.LoggedRequestBody
+	var requestBody gioutil.BufferedReadCloser
 	var writer *responseLogging.LoggedResponseBodyWriter
 
 	if lh.logger != nil {
-		// This isn't free, so only do it if logging is enabled.
-		body = requestLogging.LogRequestBody(r)
+		requestBody = gioutil.NewBufferedReadCloser(r.Body)
+		r.Body = requestBody
+
 		writer = responseLogging.LogResponseBody(rw)
 	}
 
@@ -69,7 +70,7 @@ func (lh PanicHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 					r.Method,
 					time.Now(),
 					string(serializedHeaders.String()),
-					string(body.Output.String()),
+					string(requestBody.ReadAll()),
 					string(writer.Output.String()),
 					rec,
 					string(debug.Stack()),
