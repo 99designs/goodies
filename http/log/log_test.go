@@ -19,7 +19,7 @@ func setupTestServer(format string) (*httptest.Server, *bytes.Buffer) {
 	logw := bytes.NewBuffer(nil)
 	testlog := log.New(logw, "", 0)
 
-	ts := httptest.NewServer(CommonLogHandler(testlog, h, format))
+	ts := httptest.NewServer(CommonLogHandler(testlog, format, h))
 	return ts, logw
 }
 

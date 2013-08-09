@@ -19,11 +19,11 @@ func setupTestServer() (*httptest.Server, *bytes.Buffer) {
 
 	logw := bytes.NewBuffer(nil)
 	testlog := log.New(logw, "", 0)
-
+	delegate := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		panic(PANICMSG)
+	})
 	panicker := Decorate(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			panic(PANICMSG)
-		}), nil, testlog)
+		nil, testlog, delegate)
 
 	return httptest.NewServer(panicker), logw
 }
