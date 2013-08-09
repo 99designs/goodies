@@ -11,22 +11,22 @@ import (
 	"time"
 )
 
-const LogFormat = `---------------------------------------
-****** Panic serving request ******
+const LogFormat = `-----------------------------
+*** Panic serving request ***
 Url: %s
 Method: %s
 Timestamp: %s
-****** Headers ******
+****** Request Headers ******
 %s
-****** Request Body ******
+******* Request Body ********
 %s
-****** Response Body ******
+******* Response Body *******
 %s
-****** Panic details ******
+******* Panic details *******
 %+v
-****** Stack trace ******
+******** Stack trace ********
 %s
----------------------------------------
+-----------------------------
 `
 
 type PanicHandler struct {
