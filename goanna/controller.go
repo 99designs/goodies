@@ -16,7 +16,7 @@ type ControllerInterface interface {
 }
 
 type Controller struct {
-	Request      Request
+	Request
 	sessionStore SessionStore
 }
 
