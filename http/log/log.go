@@ -20,7 +20,7 @@ type commonLogHandler struct {
 
 // CommonLogHandler returns a handler that serves HTTP requests
 // If a logger is not provided, stdout will be used
-func CommonLogHandler(logger *log.Logger, h http.Handler, templ string) http.Handler {
+func CommonLogHandler(logger *log.Logger, templ string, h http.Handler) http.Handler {
 	if logger == nil {
 		logger = log.New(os.Stdout, "", 0)
 	}

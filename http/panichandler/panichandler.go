@@ -35,7 +35,7 @@ type PanicHandler struct {
 	logger   *log.Logger
 }
 
-func Decorate(delegate http.Handler, recovery http.HandlerFunc, logger *log.Logger) *PanicHandler {
+func Decorate(recovery http.HandlerFunc, logger *log.Logger, delegate http.Handler) *PanicHandler {
 	if recovery == nil {
 		recovery = DefaultRecoveryHandler
 	}
