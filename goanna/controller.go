@@ -28,13 +28,13 @@ func (c *Controller) Session() Session {
 }
 
 // NewController instantiates a new Controller using the given request and session store
-func NewController(req *http.Request, sessionStore SessionStore) Controller {
+func NewController(req *http.Request, sessionStore SessionStore) *Controller {
 	request := Request{Request: req}
 	c := Controller{
 		Request:      request,
 		sessionStore: sessionStore,
 	}
-	return c
+	return &c
 }
 
 // IsGetRequest() returns whether the request is GET
