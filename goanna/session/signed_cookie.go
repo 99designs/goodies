@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"github.com/99designs/goodies/goanna"
 	"log"
 	"net/http"
@@ -107,6 +108,9 @@ type SignedCookieSession struct {
 
 func (s SignedCookieSession) GetId() string {
 	return s.data.Id
+}
+func (s SignedCookieSession) String() string {
+	return fmt.Sprintf("%+v", s.data)
 }
 
 func (s SignedCookieSession) Get(key string) string {
