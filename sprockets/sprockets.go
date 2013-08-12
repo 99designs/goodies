@@ -25,7 +25,7 @@ type ViewHelper struct {
 
 func (vh *ViewHelper) StylesheetLinkTag(name string) (template.HTML, error) {
 	url, err := vh.asset_url(name)
-	return template.HTML(`<link href="` + template.HTMLEscaper(url) + `" rel="stylesheet">`), err
+	return template.HTML(`<link href="` + template.HTMLEscaper(url) + `" rel="stylesheet" type="text/css">`), err
 }
 
 func (vh *ViewHelper) InlineStylesheet(name string) (template.HTML, error) {
