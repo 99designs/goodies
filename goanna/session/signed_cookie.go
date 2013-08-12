@@ -151,6 +151,7 @@ func (s SignedCookieSession) WriteToResponse(resp goanna.Response) {
 		Value:    s.CookieSigner.EncodeRawData(bytes),
 		Expires:  s.Expiry(),
 		HttpOnly: true,
+		Path:     "/",
 	}
 	resp.SetCookie(cookie)
 }
