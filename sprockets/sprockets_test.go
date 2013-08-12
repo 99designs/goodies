@@ -31,7 +31,7 @@ func (s *ST) TestAssetHelperMethods(c *C) {
 
 	link, err := vh.StylesheetLinkTag("&Foo")
 	c.Check(err, Equals, nil)
-	c.Check(link, Equals, template.HTML(`<link href="&amp;Foo" rel="stylesheet">`))
+	c.Check(link, Equals, template.HTML(`<link href="&amp;Foo" rel="stylesheet" type="text/css">`))
 
 	js, err := vh.JavascriptTag("&Foo")
 	c.Check(err, Equals, nil)
