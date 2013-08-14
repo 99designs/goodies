@@ -3,6 +3,7 @@ package panichandler
 
 import (
 	"bytes"
+	ghttp "github.com/99designs/goodies/http"
 	responseLogging "github.com/99designs/goodies/http/log/response"
 	gioutil "github.com/99designs/goodies/ioutil"
 	"log"
@@ -29,13 +30,15 @@ Timestamp: %s
 -----------------------------
 `
 
+type RecoveryHandlerFunc func(http.ResponseWriter, *http.Request, interface{})
+
 type PanicHandler struct {
 	handler  http.Handler
-	recovery http.HandlerFunc
+	recovery RecoveryHandlerFunc
 	logger   *log.Logger
 }
 
-func Decorate(recovery http.HandlerFunc, logger *log.Logger, delegate http.Handler) *PanicHandler {
+func Decorate(recovery RecoveryHandlerFunc, logger *log.Logger, delegate http.Handler) *PanicHandler {
 	if recovery == nil {
 		recovery = DefaultRecoveryHandler
 	}
@@ -58,8 +61,8 @@ func (lh PanicHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	defer func() {
-		if rec := recover(); rec != nil {
-			lh.recovery(rw, r)
+		if panicErr := recover(); panicErr != nil {
+			lh.recovery(rw, r, panicErr)
 
 			if lh.logger != nil {
 				serializedHeaders := bytes.Buffer{}
@@ -72,7 +75,7 @@ func (lh PanicHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 					string(serializedHeaders.String()),
 					string(requestBody.ReadAll()),
 					string(writer.Output.String()),
-					rec,
+					panicErr,
 					string(debug.Stack()),
 				)
 			}
@@ -82,6 +85,15 @@ func (lh PanicHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	lh.handler.ServeHTTP(writer, r)
 }
 
-func DefaultRecoveryHandler(rw http.ResponseWriter, r *http.Request) {
-	http.Error(rw, "Internal Server Error", http.StatusInternalServerError)
+func DefaultRecoveryHandler(rw http.ResponseWriter, r *http.Request, panicErr interface{}) {
+	httperr, isHttpError := panicErr.(ghttp.HttpError)
+	if isHttpError {
+		httperror(rw, httperr.StatusCode)
+	} else {
+		httperror(rw, http.StatusInternalServerError)
+	}
+}
+
+func httperror(rw http.ResponseWriter, statuscode int) {
+	http.Error(rw, http.StatusText(statuscode), statuscode)
 }
