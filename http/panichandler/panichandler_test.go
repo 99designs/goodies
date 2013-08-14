@@ -2,7 +2,6 @@ package panichandler
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -15,8 +14,7 @@ const BODYMSG = "panicmsg"
 
 type pannicker struct{}
 
-func setupTestServer() (*httptest.Server, *bytes.Buffer) {
-
+func TestPanicHandler(t *testing.T) {
 	logw := bytes.NewBuffer(nil)
 	testlog := log.New(logw, "", 0)
 	delegate := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -25,21 +23,15 @@ func setupTestServer() (*httptest.Server, *bytes.Buffer) {
 	panicker := Decorate(
 		nil, testlog, delegate)
 
-	return httptest.NewServer(panicker), logw
-}
-
-func TestPanicHandler(t *testing.T) {
-	path := "/foo/bar"
-	ts, logw := setupTestServer()
+	ts := httptest.NewServer(panicker)
 	defer ts.Close()
+
+	path := "/foo/bar"
 	req, err := http.NewRequest("POST", ts.URL+path, bytes.NewReader([]byte(BODYMSG)))
 	panicIf(err)
-	res, err := http.DefaultClient.Do(req)
+	_, err = http.DefaultClient.Do(req)
 	panicIf(err)
-
-	fmt.Println(res.Body)
 	g := logw.String()
-	fmt.Println(g)
 
 	expect1 := regexp.MustCompile(PANICMSG)
 	if !expect1.MatchString(g) {
