@@ -1,7 +1,9 @@
 package goanna
 
 import (
+	ghttp "github.com/99designs/goodies/http"
 	"io/ioutil"
+	"net"
 	"net/http"
 )
 
@@ -26,7 +28,13 @@ func (r *Request) BodyData() []byte {
 		if r.Body != nil {
 			r.bodyData, err = ioutil.ReadAll(r.Body)
 			if err != nil {
-				panic(err)
+				// catch i/o timeout errors
+				neterr, isNetError := err.(net.Error)
+				if isNetError && neterr.Timeout() {
+					panic(ghttp.NewHttpError(err, http.StatusRequestTimeout))
+				} else {
+					panic(err)
+				}
 			}
 		}
 		r.bodyRead = true

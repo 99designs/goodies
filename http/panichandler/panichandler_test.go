@@ -2,7 +2,8 @@ package panichandler
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
+	ghttp "github.com/99designs/goodies/http"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -15,8 +16,7 @@ const BODYMSG = "panicmsg"
 
 type pannicker struct{}
 
-func setupTestServer() (*httptest.Server, *bytes.Buffer) {
-
+func TestPanicHandler(t *testing.T) {
 	logw := bytes.NewBuffer(nil)
 	testlog := log.New(logw, "", 0)
 	delegate := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -25,21 +25,15 @@ func setupTestServer() (*httptest.Server, *bytes.Buffer) {
 	panicker := Decorate(
 		nil, testlog, delegate)
 
-	return httptest.NewServer(panicker), logw
-}
-
-func TestPanicHandler(t *testing.T) {
-	path := "/foo/bar"
-	ts, logw := setupTestServer()
+	ts := httptest.NewServer(panicker)
 	defer ts.Close()
+
+	path := "/foo/bar"
 	req, err := http.NewRequest("POST", ts.URL+path, bytes.NewReader([]byte(BODYMSG)))
 	panicIf(err)
-	res, err := http.DefaultClient.Do(req)
+	_, err = http.DefaultClient.Do(req)
 	panicIf(err)
-
-	fmt.Println(res.Body)
 	g := logw.String()
-	fmt.Println(g)
 
 	expect1 := regexp.MustCompile(PANICMSG)
 	if !expect1.MatchString(g) {
@@ -49,6 +43,25 @@ func TestPanicHandler(t *testing.T) {
 	expect2 := regexp.MustCompile(BODYMSG)
 	if !expect2.MatchString(g) {
 		t.Errorf("test 2: got '%s', want '%s'", g, expect2)
+	}
+}
+
+func TestHttpErrorHandler(t *testing.T) {
+	delegate := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		panic(ghttp.HttpError{errors.New("i/o timeout"), http.StatusRequestTimeout})
+	})
+	h := Decorate(nil, nil, delegate)
+
+	ts := httptest.NewServer(h)
+	defer ts.Close()
+
+	req, err := http.NewRequest("POST", ts.URL, bytes.NewReader([]byte("blah")))
+	panicIf(err)
+	res, err := http.DefaultClient.Do(req)
+	panicIf(err)
+
+	if res.StatusCode != http.StatusRequestTimeout {
+		t.Errorf("Expected %d, got %d", http.StatusRequestTimeout, res.StatusCode)
 	}
 }
 
