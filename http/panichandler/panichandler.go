@@ -88,7 +88,7 @@ func (lh PanicHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 func DefaultRecoveryHandler(rw http.ResponseWriter, r *http.Request, panicErr interface{}) {
 	httperr, isHttpError := panicErr.(ghttp.HttpError)
 	if isHttpError {
-		httperror(rw, httperr.StatusCode)
+		httperror(rw, httperr.StatusCode())
 	} else {
 		httperror(rw, http.StatusInternalServerError)
 	}
