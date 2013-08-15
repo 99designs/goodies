@@ -31,7 +31,7 @@ func (r *Request) BodyData() []byte {
 				// catch i/o timeout errors
 				neterr, isNetError := err.(net.Error)
 				if isNetError && neterr.Timeout() {
-					panic(ghttp.HttpError{err, http.StatusRequestTimeout})
+					panic(ghttp.NewHttpError(err, http.StatusRequestTimeout))
 				} else {
 					panic(err)
 				}
