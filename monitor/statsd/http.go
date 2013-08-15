@@ -1,7 +1,6 @@
 package statsd
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 )
@@ -9,7 +8,7 @@ import (
 type StatsdLogHandler struct {
 	handler http.Handler
 	statter *Statsd
-	prefix  string
+	bucket  string
 }
 
 // ServeHTTP records the time for a request and sends the result to statsd
@@ -18,15 +17,14 @@ func (sh *StatsdLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 	sh.handler.ServeHTTP(w, req)
 	requestDuration := time.Now().Sub(requestStartTime)
 
-	description := fmt.Sprintf("%s.%s.%s.", sh.prefix, req.Method, req.URL.Path)
-	sh.statter.Counter(1.0, description+"requests", 1)
-	sh.statter.Timing(1.0, description+"responsetime", requestDuration)
+	sh.statter.Counter(1.0, sh.bucket+".requests", 1)
+	sh.statter.Timing(1.0, sh.bucket+".responsetime", requestDuration)
 }
 
-func Decorate(statter *Statsd, prefix string, h http.Handler) http.Handler {
+func Decorate(statter *Statsd, bucket string, h http.Handler) http.Handler {
 	return &StatsdLogHandler{
 		handler: h,
 		statter: statter,
-		prefix:  prefix,
+		bucket:  bucket,
 	}
 }
