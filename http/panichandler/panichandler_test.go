@@ -48,7 +48,7 @@ func TestPanicHandler(t *testing.T) {
 
 func TestHttpErrorHandler(t *testing.T) {
 	delegate := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		panic(ghttp.HttpError{errors.New("i/o timeout"), http.StatusRequestTimeout})
+		panic(ghttp.NewHttpError(errors.New("i/o timeout"), http.StatusRequestTimeout))
 	})
 	h := Decorate(nil, nil, delegate)
 
