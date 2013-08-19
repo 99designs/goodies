@@ -52,7 +52,7 @@ func TestTimeSinceLastUpdate(t *testing.T) {
 
 	sinceLast := bucket.TimeSinceLastUpdate()
 	if sinceLast != time.Second*1 {
-		t.Error("Expected time since last update to be less than 1 second, got %d", sinceLast)
+		t.Errorf("Expected time since last update to be less than 1 second, got %d", sinceLast)
 	}
 }
 
