@@ -12,7 +12,7 @@ func Dial(proto, addr string) *Statsd {
 
 	if err != nil {
 		log.Printf("Couldn't initiate statsd with address: '%s'", addr)
-		return nil
+		return &Statsd{nil}
 	}
 	return &Statsd{st}
 }
