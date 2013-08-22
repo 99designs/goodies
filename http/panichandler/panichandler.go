@@ -24,7 +24,7 @@ Timestamp: %s
 ******* Response Body *******
 %s
 ******* Panic details *******
-%+v
+%+v (%s)
 ******** Stack trace ********
 %s
 -----------------------------
@@ -67,6 +67,10 @@ func (lh PanicHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			if lh.logger != nil {
 				serializedHeaders := bytes.Buffer{}
 				r.Header.Write(&serializedHeaders)
+				errDescription := ""
+				if err, ok := panicErr.(error); ok {
+					errDescription = err.Error()
+				}
 
 				lh.logger.Printf(LogFormat,
 					r.URL.String(),
@@ -76,6 +80,7 @@ func (lh PanicHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 					string(requestBody.ReadAll()),
 					string(writer.Output.String()),
 					panicErr,
+					errDescription,
 					string(debug.Stack()),
 				)
 			}
