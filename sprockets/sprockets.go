@@ -12,6 +12,7 @@ package sprockets
 
 import (
 	"html/template"
+	"net/http"
 )
 
 type AssetPipeline interface {
@@ -21,6 +22,15 @@ type AssetPipeline interface {
 
 type ViewHelper struct {
 	AssetPipeline
+}
+
+func (vh ViewHelper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	c, err := vh.GetAssetContents(r.URL.Path[1:])
+	if err != nil {
+		http.Error(w, err.Error(), 404)
+	} else {
+		w.Write(c)
+	}
 }
 
 func (vh *ViewHelper) StylesheetLinkTag(name string) (template.HTML, error) {
