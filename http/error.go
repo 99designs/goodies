@@ -3,7 +3,7 @@ package http
 // HttpError is used as a convenient way to be able to panic and
 // ensure that a particular http status code will be returned
 type HttpError interface {
-	Error() error    // the original error
+	Error() string   // the original error
 	StatusCode() int // a suggested http error code
 }
 
@@ -12,9 +12,10 @@ type httpError struct {
 	sc  int   // a suggested http error code
 }
 
-func (this httpError) Error() error {
-	return this.err
+func (this httpError) Error() string {
+	return this.err.Error()
 }
+
 func (this httpError) StatusCode() int {
 	return this.sc
 }
