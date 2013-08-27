@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// contains returns true if any string in substrs is within s
+// Contains returns true if any string in substrs is within s
 func Contains(s string, substrs []string) bool {
 	for _, substr := range substrs {
 		if strings.Contains(s, substr) {
@@ -16,7 +16,7 @@ func Contains(s string, substrs []string) bool {
 	return false
 }
 
-// removeStringsFromString removes any string in substrs from s
+// RemoveStringsFromString removes any string in substrs from s
 func RemoveStringsFromString(s string, substrs []string) string {
 	for loop := true; loop; {
 		loop = false
@@ -33,13 +33,26 @@ func RemoveStringsFromString(s string, substrs []string) string {
 	return s
 }
 
-// mapStringSlice returns a slice containing all the elements of ss
+// MapStringSlice returns a slice containing all the elements of ss
 // after applying the callback function to each one
-func MapStringSlice(ss []string, callback func(string) string) []string {
+func Map(ss []string, callback func(string) string) []string {
 	newStrings := make([]string, len(ss))
 	for i, s := range ss {
 		newStrings[i] = callback(s)
 	}
 
 	return newStrings
+}
+
+// Equal returns a boolean reporting whether a == b
+func Equal(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
 }
