@@ -11,9 +11,9 @@ func NullSprockets() ViewHelper {
 type nullSprockets struct{}
 
 func (s nullSprockets) GetAssetUrl(name string) (template.HTMLAttr, error) {
-	panic("Null sprockets in use, cannot get asset urls")
+	return "", nil
 }
 
 func (s nullSprockets) GetAssetContents(name string) ([]byte, error) {
-	panic("Null sprockets in use, cannot get asset contents")
+	return make([]byte, 0), nil
 }
