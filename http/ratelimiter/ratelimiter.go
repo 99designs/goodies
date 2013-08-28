@@ -10,7 +10,7 @@ import (
 const StatusTooManyRequests = 429
 
 type RateLimitedHandler struct {
-	http.Handler
+	delegate    http.Handler
 	rateLimiter RateLimiter
 }
 
@@ -22,7 +22,7 @@ func Decorate(delegate http.Handler, rateLimiter RateLimiter) RateLimitedHandler
 
 func (lh RateLimitedHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if ok, retryAfter := lh.rateLimiter(r); ok {
-		lh.Handler.ServeHTTP(rw, r)
+		lh.delegate.ServeHTTP(rw, r)
 	} else {
 		rw.Header().Set("Retry-After", fmt.Sprint(int64(retryAfter.Seconds())))
 		http.Error(rw, "Too many requests", StatusTooManyRequests)
