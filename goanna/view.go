@@ -7,23 +7,21 @@ import (
 
 type Views struct {
 	*template.Template
-	ViewHelper *sprockets.ViewHelper
+	AssetPipeline *sprockets.ViewHelper
 }
 
 func NewView(viewHelper *sprockets.ViewHelper) Views {
 	v := Views{nil, viewHelper}
-	v.Init()
-	return v
-}
-
-func (v *Views) Init() {
 	if v.Template == nil {
 		v.Template = template.New("Template")
 	}
 
 	v.Template.Funcs(template.FuncMap{
 		"urlFor":     UrlFor,
-		"stylesheet": v.ViewHelper.StylesheetLinkTag,
-		"javascript": v.ViewHelper.JavascriptTag,
+		"stylesheet": v.AssetPipeline.StylesheetLinkTag,
+		"javascript": v.AssetPipeline.JavascriptTag,
+		"assetUrl":   v.AssetPipeline.GetAssetUrl,
 	})
+
+	return v
 }
