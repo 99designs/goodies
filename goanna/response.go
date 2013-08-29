@@ -156,3 +156,18 @@ func NewJsonResponse(data interface{}) *OkResponse {
 
 	return response
 }
+
+func NewJsonpResponse(callback string, data interface{}) *OkResponse {
+	json, err := json.Marshal(data)
+	if err != nil {
+		log.Panicln("Bad data for json marshalling")
+	}
+	body := append([]byte(callback + "("), json...)
+	body = append(body, []byte(");")...)
+
+	response := NewResponse()
+	response.Content = body
+	response.Header.Set("Content-Type", "application/javascript")
+
+	return response
+}
