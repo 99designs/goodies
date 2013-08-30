@@ -7,9 +7,12 @@ import (
 )
 
 var Router *mux.Router
+var UrlBase url.URL
 
 func init() {
 	ClearRouter()
+	UrlBase.Scheme = "http"
+	UrlBase.Host = "localhost"
 }
 
 func ClearRouter() {
@@ -27,4 +30,11 @@ func UrlFor(name string, args ...string) *url.URL {
 		log.Panicln("UrlFor: " + err.Error())
 	}
 	return url
+}
+
+func AbsoluteUrlFor(name string, args ...string) *url.URL {
+	u := UrlFor(name, args...)
+	u.Host = UrlBase.Host
+	u.Scheme = UrlBase.Scheme
+	return u
 }
