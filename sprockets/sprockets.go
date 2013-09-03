@@ -7,6 +7,11 @@ To use in development:
  * run `rackup src/github.com/99designs/goodies/sprockets/config.ru`
  * In your app, call 'NewSprocketsServer("http://localhost:8012", "assets") to get a ViewHelper'
  * Use the ViewHelper to generate links to your assets.
+
+To use in production:
+ * Create a file called 'Rakefile' in the root of your project (see 'Rakefile.sample' in this package)
+ * run `rake assets` from your project root to generate assets into './public'
+ * See usage.go.sample in this package for an example.
 */
 package sprockets
 

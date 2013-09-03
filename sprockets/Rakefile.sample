@@ -1,0 +1,6 @@
+require './src/github.com/99designs/goodies/sprockets/environment'
+
+env = SprocketsEnv.new
+env.environment.css_compressor = :yui
+env.environment.js_compressor = :uglifier
+env.rake_task
