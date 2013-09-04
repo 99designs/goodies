@@ -11,9 +11,9 @@ type Memcache struct {
 	keyprefix string
 }
 
-func NewMemcache(servers string, cacheKeyPrefix string) *Memcache {
+func NewMemcache(servers []string, cacheKeyPrefix string) *Memcache {
 	m := new(Memcache)
-	m.mc = memcache.New(servers)
+	m.mc = memcache.New(servers...)
 
 	m.keyprefix = cacheKeyPrefix
 
