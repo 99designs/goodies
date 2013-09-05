@@ -2,14 +2,12 @@
 package panichandler
 
 import (
-	"bytes"
 	ghttp "github.com/99designs/goodies/http"
+	errorLogging "github.com/99designs/goodies/http/log/error"
 	responseLogging "github.com/99designs/goodies/http/log/response"
 	gioutil "github.com/99designs/goodies/ioutil"
 	"log"
 	"net/http"
-	"runtime/debug"
-	"time"
 )
 
 const LogFormat = `-----------------------------
@@ -65,23 +63,12 @@ func (lh PanicHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			lh.recovery(rw, r, panicErr)
 
 			if lh.logger != nil {
-				serializedHeaders := bytes.Buffer{}
-				r.Header.Write(&serializedHeaders)
-				errDescription := ""
-				if err, ok := panicErr.(error); ok {
-					errDescription = err.Error()
-				}
-
-				lh.logger.Printf(LogFormat,
-					r.URL.String(),
-					r.Method,
-					time.Now(),
-					string(serializedHeaders.String()),
+				errorLogging.LogError(
+					lh.logger,
+					r,
+					panicErr,
 					string(requestBody.ReadAll()),
 					string(writer.Output.String()),
-					panicErr,
-					errDescription,
-					string(debug.Stack()),
 				)
 			}
 		}

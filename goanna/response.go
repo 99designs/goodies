@@ -2,6 +2,7 @@ package goanna
 
 import (
 	"encoding/json"
+	errorLogging "github.com/99designs/goodies/http/log/error"
 	"log"
 	"net/http"
 	"time"
@@ -96,6 +97,15 @@ type ErrorResponse struct {
 }
 
 func NewErrorResponse(message string, code int) *ErrorResponse {
+	// Log a minimal error
+	errorLogging.LogError(
+		nil,
+		nil,
+		message,
+		"",
+		"",
+	)
+
 	response := ErrorResponse{
 		OkResponse: *NewResponse(),
 		Message:    message,
@@ -162,7 +172,7 @@ func NewJsonpResponse(callback string, data interface{}) *OkResponse {
 	if err != nil {
 		log.Panicln("Bad data for json marshalling")
 	}
-	body := append([]byte(callback + "("), json...)
+	body := append([]byte(callback+"("), json...)
 	body = append(body, []byte(");")...)
 
 	response := NewResponse()
