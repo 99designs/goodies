@@ -20,6 +20,7 @@ type ControllerInterface interface {
 type Controller struct {
 	Request
 	sessionStore SessionStore
+	logger       *log.Logger
 }
 
 func (c *Controller) Session() Session {
@@ -48,7 +49,12 @@ func (c *Controller) IsGetRequest() bool {
 func (c *Controller) LogRequest() {
 	serializedHeaders := bytes.Buffer{}
 	c.Header.Write(&serializedHeaders)
-	log.Printf(
+
+	l := log.Printf
+	if c.logger != nil {
+		l = c.logger.Printf
+	}
+	l(
 		`
 *** Diagnostic Log ***
 Url: %s
