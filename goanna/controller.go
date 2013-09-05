@@ -7,7 +7,9 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"runtime/debug"
 	"strings"
+	"time"
 )
 
 type ControllerInterface interface {
@@ -40,6 +42,33 @@ func NewController(req *http.Request, sessionStore SessionStore) *Controller {
 // IsGetRequest() returns whether the request is GET
 func (c *Controller) IsGetRequest() bool {
 	return c.Request.Method == "GET"
+}
+
+// LogRequest dumps the current request to stdout
+func (c *Controller) LogRequest() {
+	serializedHeaders := bytes.Buffer{}
+	c.Header.Write(&serializedHeaders)
+	log.Printf(
+		`
+*** Diagnostic Log ***
+Url: %s
+Method: %s
+Timestamp: %s
+****** Request Headers ******
+%s
+******* Request Body ********
+%s
+******** Stack trace ********
+%s
+-----------------------------
+`,
+		c.Request.URL.String(),
+		c.Request.Method,
+		time.Now(),
+		string(serializedHeaders.String()),
+		string(c.Request.BodyData()),
+		string(debug.Stack()),
+	)
 }
 
 // IsGetRequest() returns whether the request is POST
