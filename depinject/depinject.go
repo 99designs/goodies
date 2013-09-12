@@ -42,8 +42,6 @@ func (di *DependencyInjector) Register(constructorFunc interface{}) error {
 
 	di.registry[outType] = constructorFunc
 
-	log.Printf("Registered %s\n", outType)
-
 	return nil
 }
 
