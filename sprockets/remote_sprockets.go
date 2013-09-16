@@ -53,8 +53,12 @@ func (s *SprocketsServer) fetchAssetList(url string) (map[string]string, error) 
 		return nil, err
 	}
 	defer resp.Body.Close()
-	manifest, err := s.parseAssets(resp.Body)
-	return manifest, err
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("Couldn't read assets from " + url)
+	}
+
+	return s.parseAssets(resp.Body)
 }
 
 func (s *SprocketsServer) parseAssets(r io.Reader) (map[string]string, error) {
