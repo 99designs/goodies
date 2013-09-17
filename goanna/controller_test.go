@@ -21,11 +21,12 @@ func (s *ControllerSuite) TestErrorLogging(c *C) {
 	con := NewController(req, nil)
 	output := bytes.Buffer{}
 	con.logger = log.New(&output, "", 0)
-	con.LogRequest()
+	con.LogRequest("Just for testing")
 	fmt.Print(string(output.Bytes()))
 
 	startOfLog := `
 *** Diagnostic Log ***
+Reason for diagnostic: Just for testing
 Url: /
 Method: GET
 Timestamp:`
