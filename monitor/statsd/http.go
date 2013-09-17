@@ -23,7 +23,6 @@ func (sh *StatsdLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 
 	description := sh.RequestFormatter(req)
 	if description != "" {
-		fmt.Println(sh.prefix + "." + description + ".requests")
 		sh.statter.Counter(1.0, sh.prefix+"."+description+".requests", 1)
 		sh.statter.Timing(1.0, sh.prefix+"."+description+".responsetime", requestDuration)
 	}
