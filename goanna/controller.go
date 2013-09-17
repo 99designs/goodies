@@ -46,7 +46,7 @@ func (c *Controller) IsGetRequest() bool {
 }
 
 // LogRequest dumps the current request to stdout
-func (c *Controller) LogRequest() {
+func (c *Controller) LogRequest(reason string) {
 	serializedHeaders := bytes.Buffer{}
 	c.Header.Write(&serializedHeaders)
 
@@ -57,6 +57,7 @@ func (c *Controller) LogRequest() {
 	l(
 		`
 *** Diagnostic Log ***
+Reason for diagnostic: %s
 Url: %s
 Method: %s
 Timestamp: %s
@@ -68,6 +69,7 @@ Timestamp: %s
 %s
 -----------------------------
 `,
+		reason,
 		c.Request.URL.String(),
 		c.Request.Method,
 		time.Now(),
