@@ -15,22 +15,22 @@ const (
 	EXPIRY_KEY = "SESSION_EXPIRY_TIME"
 )
 
-type CookieSessionHandler struct {
+type SignedCookieSessionHandler struct {
 	goanna.SessionHandler
 	goanna.CookieSigner
 	CookieName      string
 	DefaultDuration time.Duration
 }
 
-func NewCookieSessionHandler(name, secret string, defaultDuration time.Duration) CookieSessionHandler {
-	return CookieSessionHandler{
+func NewSignedCookieSessionHandler(name, secret string, defaultDuration time.Duration) SignedCookieSessionHandler {
+	return SignedCookieSessionHandler{
 		CookieSigner:    goanna.NewCookieSigner(secret),
 		CookieName:      name,
 		DefaultDuration: defaultDuration,
 	}
 }
 
-func (ss CookieSessionHandler) getSessionData(request *http.Request) (*sessionData, error) {
+func (ss SignedCookieSessionHandler) getSessionData(request *http.Request) (*sessionData, error) {
 	cookie, err := request.Cookie(ss.CookieName)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (ss CookieSessionHandler) getSessionData(request *http.Request) (*sessionDa
 	return ss.decodeSessionData(cookie.Value)
 }
 
-func (ss CookieSessionHandler) decodeSessionData(cv string) (*sessionData, error) {
+func (ss SignedCookieSessionHandler) decodeSessionData(cv string) (*sessionData, error) {
 	raw, err := ss.CookieSigner.DecodeCookieBytes(cv)
 	if err != nil {
 		return nil, err
@@ -72,64 +72,74 @@ func unmarshalSessionData(raw []byte) (*sessionData, error) {
 	return &data, nil
 }
 
-func (ss CookieSessionHandler) GetSession(request *goanna.Request) goanna.Session {
+func (ss SignedCookieSessionHandler) GetSession(request *goanna.Request) goanna.Session {
 	session := SignedCookieSession{
-		sessionData:   &sessionData{},
-		name:          ss.CookieName,
-		CookieSigner:  ss.CookieSigner,
-		defaultExpiry: time.Now().Add(ss.DefaultDuration),
+		SignedCookieSessionHandler: &ss,
 	}
 	data, err := ss.getSessionData(request.Request)
-	if err != nil {
+	if err == nil {
+		session.sessionData = data
+		if session.HasExpired() {
+			session.Clear()
+		}
+	} else {
 		session.sessionData = &sessionData{
 			Id:    generateSessionId(),
 			Store: make(map[string]string),
 		}
-	} else {
-		session.sessionData = data
 	}
 
 	return session
 }
 
-type SignedCookieSession struct {
-	*sessionData
-	name string
-	goanna.CookieSigner
-	defaultExpiry time.Time
-}
-
-func (s SignedCookieSession) SetDefaultExpiry() time.Time {
-	s.SetExpiry(s.defaultExpiry)
-	return s.defaultExpiry
-}
-
-func (s SignedCookieSession) Expiry() time.Time {
-	expiryStr := s.Get(EXPIRY_KEY)
-	expiry, err := time.Parse(time.RFC3339, expiryStr)
-	if err != nil {
-		return s.SetDefaultExpiry()
-	}
-	if expiry.After(s.defaultExpiry) {
-		return expiry
-	}
-	return s.SetDefaultExpiry()
-}
-
-func (s SignedCookieSession) SetExpiry(e time.Time) time.Time {
-	s.Set(EXPIRY_KEY, e.Format(time.RFC3339))
-	return e
-}
-
-func (s SignedCookieSession) WriteToResponse(resp goanna.Response) {
+func (ss SignedCookieSessionHandler) writeToResponse(s SignedCookieSession, resp goanna.Response) {
 	bytes := marshalSessionData(*s.sessionData)
+	signedbytes := ss.CookieSigner.EncodeRawData(bytes)
 
 	cookie := http.Cookie{
-		Name:     s.name,
-		Value:    s.CookieSigner.EncodeRawData(bytes),
-		Expires:  s.Expiry(),
+		Name:     ss.CookieName,
+		Value:    signedbytes,
 		HttpOnly: true,
 		Path:     "/",
 	}
+	maxage := int(s.MaxAge() / time.Second)
+	if maxage != 0 {
+		cookie.MaxAge = maxage
+	}
 	resp.SetCookie(cookie)
+}
+
+type SignedCookieSession struct {
+	*sessionData
+	*SignedCookieSessionHandler
+}
+
+func (s SignedCookieSession) MaxAge() time.Duration {
+	expiry, err := s.expiry()
+	if err == nil {
+		return expiry.Sub(time.Now())
+	} else if s.SignedCookieSessionHandler.DefaultDuration > 0 {
+		return s.SignedCookieSessionHandler.DefaultDuration
+	}
+
+	return 0
+}
+
+func (s SignedCookieSession) SetMaxAge(d time.Duration) {
+	expiry := time.Now().Add(d)
+	s.Set(EXPIRY_KEY, expiry.Format(time.RFC3339))
+}
+
+func (s SignedCookieSession) expiry() (time.Time, error) {
+	expiryStr := s.Get(EXPIRY_KEY)
+	return time.Parse(time.RFC3339, expiryStr)
+}
+
+func (s SignedCookieSession) HasExpired() bool {
+	expiry, err := s.expiry()
+	return err == nil && expiry.Before(time.Now())
+}
+
+func (s SignedCookieSession) WriteToResponse(resp goanna.Response) {
+	s.SignedCookieSessionHandler.writeToResponse(s, resp)
 }

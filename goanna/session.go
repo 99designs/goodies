@@ -9,11 +9,11 @@ type SessionHandler interface {
 }
 
 type Session interface {
+	GetId() string
 	Get(string) string
 	Set(string, string)
-	Expiry() time.Time
-	SetExpiry(t time.Time) time.Time
-	WriteToResponse(Response)
-	GetId() string
+	SetMaxAge(time.Duration)
+	HasExpired() bool
 	Clear()
+	WriteToResponse(Response)
 }
