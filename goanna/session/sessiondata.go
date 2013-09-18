@@ -1,7 +1,11 @@
 package session
 
 import (
+	"bytes"
 	"crypto/rand"
+	"encoding/gob"
+	"errors"
+	"log"
 )
 
 type sessionData struct {
@@ -38,4 +42,29 @@ func randString(n int) string {
 		bytes[i] = alphanum[b%byte(len(alphanum))]
 	}
 	return string(bytes)
+}
+
+func (sd sessionData) GobEncode() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	e := gob.NewEncoder(buf)
+	err := e.Encode(sd)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (data *sessionData) GobDecode(raw []byte) error {
+	buf := bytes.NewBuffer(raw)
+	d := gob.NewDecoder(buf)
+	err := d.Decode(&data)
+	if err != nil {
+		log.Println("Invalid session cookie: " + err.Error())
+		return err
+	}
+	if data.Id == "" || data.Store == nil {
+		return errors.New("Nil data in struct")
+	}
+	return nil
 }
