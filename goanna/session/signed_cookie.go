@@ -2,9 +2,6 @@
 package session
 
 import (
-	"bytes"
-	"encoding/gob"
-	"errors"
 	"github.com/99designs/goodies/goanna"
 	"log"
 	"net/http"
@@ -43,33 +40,12 @@ func (ss SignedCookieSessionHandler) decodeSessionData(cv string) (*sessionData,
 	if err != nil {
 		return nil, err
 	}
-	return unmarshalSessionData(raw)
-}
-
-func marshalSessionData(sd sessionData) []byte {
-	buf := &bytes.Buffer{}
-	e := gob.NewEncoder(buf)
-	err := e.Encode(sd)
+	sessionData := sessionData{}
+	err = sessionData.GobDecode(raw)
 	if err != nil {
-		panic(err)
-	}
-
-	return buf.Bytes()
-}
-
-func unmarshalSessionData(raw []byte) (*sessionData, error) {
-	var data sessionData
-	buf := bytes.NewBuffer(raw)
-	d := gob.NewDecoder(buf)
-	err := d.Decode(&data)
-	if err != nil {
-		log.Println("Invalid session cookie: " + err.Error())
 		return nil, err
 	}
-	if data.Id == "" || data.Store == nil {
-		return nil, errors.New("Nil data in struct")
-	}
-	return &data, nil
+	return &sessionData, nil
 }
 
 func (ss SignedCookieSessionHandler) GetSession(request *goanna.Request) goanna.Session {
@@ -93,7 +69,11 @@ func (ss SignedCookieSessionHandler) GetSession(request *goanna.Request) goanna.
 }
 
 func (ss SignedCookieSessionHandler) writeToResponse(s SignedCookieSession, resp goanna.Response) {
-	bytes := marshalSessionData(*s.sessionData)
+	bytes, err := s.sessionData.GobEncode()
+	if err != nil {
+		log.Println(err.Error())
+	}
+
 	signedbytes := ss.CookieSigner.EncodeRawData(bytes)
 
 	cookie := http.Cookie{
