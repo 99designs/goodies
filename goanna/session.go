@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type SessionStore interface {
+type SessionHandler interface {
 	GetSession(*Request) Session
 }
 

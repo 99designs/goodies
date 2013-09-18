@@ -19,9 +19,9 @@ type ControllerInterface interface {
 }
 
 type Controller struct {
-	Request      *Request
-	sessionStore SessionStore
-	logger       *log.Logger
+	Request        *Request
+	sessionHandler SessionHandler
+	logger         *log.Logger
 }
 
 func (c *Controller) Init() {}
@@ -32,15 +32,15 @@ func (c *Controller) SetRequest(req *http.Request) {
 
 func (c *Controller) Session() Session {
 	if c.Request.session == nil {
-		c.Request.session = c.sessionStore.GetSession(c.Request)
+		c.Request.session = c.sessionHandler.GetSession(c.Request)
 	}
 	return c.Request.session
 }
 
 // NewController instantiates a new Controller using the given request and session store
-func NewController(sessionStore SessionStore) Controller {
+func NewController(sessionHandler SessionHandler) Controller {
 	return Controller{
-		sessionStore: sessionStore,
+		sessionHandler: sessionHandler,
 	}
 }
 
