@@ -3,10 +3,8 @@ package session
 
 import (
 	"bytes"
-	"crypto/rand"
 	"encoding/gob"
 	"errors"
-	"fmt"
 	"github.com/99designs/goodies/goanna"
 	"log"
 	"net/http"
@@ -76,49 +74,29 @@ func unmarshalSessionData(raw []byte) (*sessionData, error) {
 
 func (ss CookieSessionHandler) GetSession(request *goanna.Request) goanna.Session {
 	session := SignedCookieSession{
+		sessionData:   &sessionData{},
 		name:          ss.CookieName,
 		CookieSigner:  ss.CookieSigner,
 		defaultExpiry: time.Now().Add(ss.DefaultDuration),
-		data:          &sessionData{},
 	}
 	data, err := ss.getSessionData(request.Request)
 	if err != nil {
-		session.data = &sessionData{
+		session.sessionData = &sessionData{
 			Id:    generateSessionId(),
 			Store: make(map[string]string),
 		}
 	} else {
-		session.data = data
+		session.sessionData = data
 	}
 
 	return session
 }
 
-type sessionData struct {
-	Id    string
-	Store map[string]string
-}
-
 type SignedCookieSession struct {
+	*sessionData
 	name string
 	goanna.CookieSigner
 	defaultExpiry time.Time
-	data          *sessionData
-}
-
-func (s SignedCookieSession) GetId() string {
-	return s.data.Id
-}
-func (s SignedCookieSession) String() string {
-	return fmt.Sprintf("%+v", s.data)
-}
-
-func (s SignedCookieSession) Get(key string) string {
-	return s.data.Store[key]
-}
-
-func (s SignedCookieSession) Set(key string, value string) {
-	s.data.Store[key] = value
 }
 
 func (s SignedCookieSession) SetDefaultExpiry() time.Time {
@@ -144,7 +122,7 @@ func (s SignedCookieSession) SetExpiry(e time.Time) time.Time {
 }
 
 func (s SignedCookieSession) WriteToResponse(resp goanna.Response) {
-	bytes := marshalSessionData(*s.data)
+	bytes := marshalSessionData(*s.sessionData)
 
 	cookie := http.Cookie{
 		Name:     s.name,
@@ -154,23 +132,4 @@ func (s SignedCookieSession) WriteToResponse(resp goanna.Response) {
 		Path:     "/",
 	}
 	resp.SetCookie(cookie)
-}
-
-func (s SignedCookieSession) Clear() {
-	s.data.Id = generateSessionId()
-	s.data.Store = make(map[string]string)
-}
-
-func generateSessionId() string {
-	return randString(22) // aprox 128 bits of entropy (62^22)
-}
-
-func randString(n int) string {
-	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	var bytes = make([]byte, n)
-	rand.Read(bytes)
-	for i, b := range bytes {
-		bytes[i] = alphanum[b%byte(len(alphanum))]
-	}
-	return string(bytes)
 }
