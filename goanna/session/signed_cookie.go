@@ -32,37 +32,32 @@ func (ss SignedCookieSessionHandler) getSessionData(request *http.Request) (*ses
 	if err != nil {
 		return nil, err
 	}
-	return ss.decodeSessionData(cookie.Value)
-}
 
-func (ss SignedCookieSessionHandler) decodeSessionData(cv string) (*sessionData, error) {
-	raw, err := ss.CookieSigner.DecodeCookieBytes(cv)
+	raw, err := ss.CookieSigner.DecodeCookieBytes(cookie.Value)
 	if err != nil {
 		return nil, err
 	}
+
 	sessionData := sessionData{}
 	err = sessionData.GobDecode(raw)
 	if err != nil {
 		return nil, err
 	}
+
 	return &sessionData, nil
 }
 
 func (ss SignedCookieSessionHandler) GetSession(request *goanna.Request) goanna.Session {
-	session := SignedCookieSession{
-		SignedCookieSessionHandler: &ss,
-	}
+	session := SignedCookieSession{h: &ss}
 	data, err := ss.getSessionData(request.Request)
 	if err == nil {
 		session.sessionData = data
-		if session.HasExpired() {
-			session.Clear()
-		}
 	} else {
-		session.sessionData = &sessionData{
-			Id:    generateSessionId(),
-			Store: make(map[string]string),
-		}
+		session.sessionData = NewSessionData()
+	}
+
+	if session.HasExpired() {
+		session.Clear()
 	}
 
 	return session
@@ -91,15 +86,15 @@ func (ss SignedCookieSessionHandler) writeToResponse(s SignedCookieSession, resp
 
 type SignedCookieSession struct {
 	*sessionData
-	*SignedCookieSessionHandler
+	h *SignedCookieSessionHandler
 }
 
 func (s SignedCookieSession) MaxAge() time.Duration {
 	expiry, err := s.expiry()
 	if err == nil {
 		return expiry.Sub(time.Now())
-	} else if s.SignedCookieSessionHandler.DefaultDuration > 0 {
-		return s.SignedCookieSessionHandler.DefaultDuration
+	} else if s.h.DefaultDuration > 0 {
+		return s.h.DefaultDuration
 	}
 
 	return 0
@@ -121,5 +116,5 @@ func (s SignedCookieSession) HasExpired() bool {
 }
 
 func (s SignedCookieSession) WriteToResponse(resp goanna.Response) {
-	s.SignedCookieSessionHandler.writeToResponse(s, resp)
+	s.h.writeToResponse(s, resp)
 }
