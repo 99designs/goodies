@@ -1,7 +1,6 @@
 package session
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -15,6 +14,11 @@ func TestRoundTrip(t *testing.T) {
 	result := sd.Get("TEST")
 	if result != "Fabulous" {
 		t.Errorf("Expected Fabulous, got %s", result)
+	}
+
+	result = sd.Get("NONEXISTANT")
+	if result != "" {
+		t.Errorf("Expected '', got %s", result)
 	}
 
 	data, err := sd.Unmarshal()
