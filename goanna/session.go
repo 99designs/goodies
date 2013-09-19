@@ -4,9 +4,8 @@ import (
 	"time"
 )
 
-type SessionHandler interface {
-	GetSession(*Request) Session
-}
+// SessionFinder finds a session based on the request
+type SessionFinder func(*Request) Session
 
 type Session interface {
 	GetId() string
@@ -18,9 +17,7 @@ type Session interface {
 	WriteToResponse(Response)
 }
 
-type NopSessionStore struct{}
-
-func (s NopSessionStore) GetSession(_ *Request) Session { return &NopSession{} }
+func NopSessionFinder(_ *Request) Session { return &NopSession{} }
 
 type NopSession struct{}
 

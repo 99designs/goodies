@@ -13,17 +13,20 @@ const (
 )
 
 type SignedCookieSessionHandler struct {
-	goanna.SessionHandler
 	goanna.CookieSigner
 	CookieName      string
 	DefaultDuration time.Duration
 }
 
-func NewSignedCookieSessionHandler(name, secret string, defaultDuration time.Duration) SignedCookieSessionHandler {
-	return SignedCookieSessionHandler{
+func NewSignedCookieSessionFinder(name, secret string, defaultDuration time.Duration) goanna.SessionFinder {
+	ss := SignedCookieSessionHandler{
 		CookieSigner:    goanna.NewCookieSigner(secret),
 		CookieName:      name,
 		DefaultDuration: defaultDuration,
+	}
+
+	return func(r *goanna.Request) goanna.Session {
+		return ss.GetSession(r)
 	}
 }
 
