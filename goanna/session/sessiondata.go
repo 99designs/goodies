@@ -13,10 +13,14 @@ type sessionData struct {
 }
 
 func NewSessionData() *sessionData {
-	return &sessionData{
-		Id:    generateSessionId(),
-		Store: make(map[string]string),
-	}
+	sd := sessionData{}
+	sd.Init()
+	return &sd
+}
+
+func (sd *sessionData) Init() {
+	sd.Id = generateSessionId()
+	sd.Store = make(map[string]string)
 }
 
 func (sd sessionData) GetId() string {
@@ -27,13 +31,12 @@ func (sd sessionData) Get(key string) string {
 	return sd.Store[key]
 }
 
-func (sd sessionData) Set(key string, value string) {
+func (sd *sessionData) Set(key string, value string) {
 	sd.Store[key] = value
 }
 
-func (sd sessionData) Clear() {
-	sd.Id = generateSessionId()
-	sd.Store = make(map[string]string)
+func (sd *sessionData) Clear() {
+	sd.Init()
 }
 
 func generateSessionId() string {

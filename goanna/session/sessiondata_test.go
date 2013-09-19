@@ -40,7 +40,7 @@ func TestRoundTrip(t *testing.T) {
 	newSd.Clear()
 
 	result = newSd.Get("TEST")
-	if result != "Fabulous" {
-		t.Errorf("Expected Fabulous, got %s", result)
+	if result != "" {
+		t.Errorf("Expected '', got %s", result)
 	}
 }
