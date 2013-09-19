@@ -4,9 +4,8 @@ import (
 	"time"
 )
 
-type SessionHandler interface {
-	GetSession(*Request) Session
-}
+// SessionFinder finds a session based on the request
+type SessionFinder func(*Request) Session
 
 type Session interface {
 	GetId() string
