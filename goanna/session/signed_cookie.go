@@ -12,14 +12,14 @@ const (
 	EXPIRY_KEY = "SESSION_EXPIRY_TIME"
 )
 
-type SignedCookieSessionHandler struct {
+type signedCookieSessionHandler struct {
 	goanna.CookieSigner
 	CookieName      string
 	DefaultDuration time.Duration
 }
 
 func NewSignedCookieSessionFinder(name, secret string, defaultDuration time.Duration) goanna.SessionFinder {
-	ss := SignedCookieSessionHandler{
+	ss := signedCookieSessionHandler{
 		CookieSigner:    goanna.NewCookieSigner(secret),
 		CookieName:      name,
 		DefaultDuration: defaultDuration,
@@ -30,7 +30,7 @@ func NewSignedCookieSessionFinder(name, secret string, defaultDuration time.Dura
 	}
 }
 
-func (ss SignedCookieSessionHandler) getSessionData(request *http.Request) (*sessionData, error) {
+func (ss signedCookieSessionHandler) getSessionData(request *http.Request) (*sessionData, error) {
 	cookie, err := request.Cookie(ss.CookieName)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (ss SignedCookieSessionHandler) getSessionData(request *http.Request) (*ses
 	return &sessionData, nil
 }
 
-func (ss SignedCookieSessionHandler) GetSession(request *goanna.Request) goanna.Session {
+func (ss signedCookieSessionHandler) GetSession(request *goanna.Request) goanna.Session {
 	session := SignedCookieSession{h: &ss}
 	data, err := ss.getSessionData(request.Request)
 	if err == nil {
@@ -66,7 +66,7 @@ func (ss SignedCookieSessionHandler) GetSession(request *goanna.Request) goanna.
 	return session
 }
 
-func (ss SignedCookieSessionHandler) writeToResponse(s SignedCookieSession, resp goanna.Response) {
+func (ss signedCookieSessionHandler) writeToResponse(s SignedCookieSession, resp goanna.Response) {
 	bytes, err := s.sessionData.GobEncode()
 	if err != nil {
 		log.Println(err.Error())
@@ -89,7 +89,7 @@ func (ss SignedCookieSessionHandler) writeToResponse(s SignedCookieSession, resp
 
 type SignedCookieSession struct {
 	*sessionData
-	h *SignedCookieSessionHandler
+	h *signedCookieSessionHandler
 }
 
 func (s SignedCookieSession) MaxAge() time.Duration {
