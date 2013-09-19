@@ -53,6 +53,13 @@ func (ss signedCookieSessionHandler) getSessionData(request *http.Request) (*ses
 func (ss signedCookieSessionHandler) GetSession(request *goanna.Request) goanna.Session {
 	session := SignedCookieSession{h: &ss}
 	data, err := ss.getSessionData(request.Request)
+
+	// Internet Explorer 9+ support MaxAge
+	ieVersion, err := getInternetExplorerVersion(request.UserAgent())
+	if err == nil && ieVersion < 9 {
+		session.preferExpires = true
+	}
+
 	if err == nil {
 		session.sessionData = data
 	} else {
@@ -82,14 +89,19 @@ func (ss signedCookieSessionHandler) writeToResponse(s SignedCookieSession, resp
 	}
 	maxage := int(s.MaxAge() / time.Second)
 	if maxage != 0 {
-		cookie.MaxAge = maxage
+		if s.preferExpires {
+			cookie.Expires = time.Now().Add(s.MaxAge())
+		} else {
+			cookie.MaxAge = maxage
+		}
 	}
 	resp.SetCookie(cookie)
 }
 
 type SignedCookieSession struct {
 	*sessionData
-	h *signedCookieSessionHandler
+	h             *signedCookieSessionHandler
+	preferExpires bool
 }
 
 func (s SignedCookieSession) MaxAge() time.Duration {
