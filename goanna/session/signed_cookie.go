@@ -42,7 +42,7 @@ func (ss signedCookieSessionHandler) getSessionData(request *http.Request) (*ses
 	}
 
 	sessionData := sessionData{}
-	err = sessionData.GobDecode(raw)
+	err = sessionData.Marshal(raw)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (ss signedCookieSessionHandler) GetSession(request *goanna.Request) goanna.
 }
 
 func (ss signedCookieSessionHandler) writeToResponse(s SignedCookieSession, resp goanna.Response) {
-	bytes, err := s.sessionData.GobEncode()
+	bytes, err := s.sessionData.Unmarshal()
 	if err != nil {
 		log.Println(err.Error())
 	}

@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/gob"
 	"errors"
-	"log"
 )
 
 type sessionData struct {
@@ -51,7 +50,7 @@ func randString(n int) string {
 	return string(bytes)
 }
 
-func (sd sessionData) GobEncode() ([]byte, error) {
+func (sd sessionData) Unmarshal() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	e := gob.NewEncoder(buf)
 	err := e.Encode(sd)
@@ -62,12 +61,11 @@ func (sd sessionData) GobEncode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (data *sessionData) GobDecode(raw []byte) error {
+func (data *sessionData) Marshal(raw []byte) error {
 	buf := bytes.NewBuffer(raw)
 	d := gob.NewDecoder(buf)
-	err := d.Decode(&data)
+	err := d.Decode(data)
 	if err != nil {
-		log.Println("Invalid session cookie: " + err.Error())
 		return err
 	}
 	if data.Id == "" || data.Store == nil {
