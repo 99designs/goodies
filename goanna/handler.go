@@ -23,7 +23,8 @@ func (handler ControllerHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 // and returns the response object
 func (handler ControllerHandler) getResponse(r *http.Request) Response {
 	controller := handler.factory()
-	controller.Init(r)
+	controller.SetRequest(r)
+	controller.Init()
 	rController := reflect.ValueOf(controller)
 	method := rController.MethodByName(handler.methodName)
 
