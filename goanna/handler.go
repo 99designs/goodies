@@ -23,7 +23,8 @@ func (handler ControllerHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 // and returns the response object
 func (handler ControllerHandler) getResponse(r *http.Request) Response {
 	controller := handler.factory()
-	controller.Init(r)
+	controller.SetRequest(r)
+	controller.Init()
 	rController := reflect.ValueOf(controller)
 	method := rController.MethodByName(handler.methodName)
 
@@ -40,11 +41,11 @@ func (handler ControllerHandler) getResponse(r *http.Request) Response {
 
 	out := method.Call(args)
 	if out[0].IsNil() {
-		return NewErrorResponse("Response from controller was nil", 500)
+		return NewErrorResponse("Response from controller was nil", http.StatusInternalServerError)
 	}
 	resp := out[0].Interface().(Response)
 	if resp == nil {
-		return NewErrorResponse("Response from controller was not Response interface", 500)
+		return NewErrorResponse("Response from controller was not Response interface", http.StatusInternalServerError)
 	}
 	controller.Session().WriteToResponse(resp)
 	return resp

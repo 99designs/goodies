@@ -13,31 +13,35 @@ import (
 )
 
 type ControllerInterface interface {
-	Init(*http.Request)
+	Init()
 	Session() Session
+	SetRequest(*http.Request)
 }
 
 type Controller struct {
-	Request
+	Request      *Request
 	sessionStore SessionStore
 	logger       *log.Logger
 }
 
+func (c *Controller) Init() {}
+
+func (c *Controller) SetRequest(req *http.Request) {
+	c.Request = &Request{Request: req}
+}
+
 func (c *Controller) Session() Session {
 	if c.Request.session == nil {
-		c.Request.session = c.sessionStore.GetSession(&c.Request)
+		c.Request.session = c.sessionStore.GetSession(c.Request)
 	}
 	return c.Request.session
 }
 
 // NewController instantiates a new Controller using the given request and session store
-func NewController(req *http.Request, sessionStore SessionStore) *Controller {
-	request := Request{Request: req}
-	c := Controller{
-		Request:      request,
+func NewController(sessionStore SessionStore) Controller {
+	return Controller{
 		sessionStore: sessionStore,
 	}
-	return &c
 }
 
 // IsGetRequest() returns whether the request is GET
@@ -48,7 +52,7 @@ func (c *Controller) IsGetRequest() bool {
 // LogRequest dumps the current request to stdout
 func (c *Controller) LogRequest(reason string) {
 	serializedHeaders := bytes.Buffer{}
-	c.Header.Write(&serializedHeaders)
+	c.Request.Header.Write(&serializedHeaders)
 
 	l := log.Printf
 	if c.logger != nil {
@@ -116,13 +120,13 @@ func (c *Controller) RenderTemplateResponse(t *template.Template, vars interface
 // Redirect returns a new RedirectResponse
 // (HTTP 302)
 func (c *Controller) Redirect(urlStr string) *RedirectResponse {
-	return NewRedirectResponse(urlStr, 302)
+	return NewRedirectResponse(urlStr)
 }
 
 // PermanentRedirect returns a new RedirectResponse with a permanent redirect
 // (HTTP 301)
 func (c *Controller) PermanentRedirect(urlStr string) *RedirectResponse {
-	return NewRedirectResponse(urlStr, 301)
+	return NewPermanentRedirectResponse(urlStr)
 }
 
 // Render renders a template using the provided template and vars struct
@@ -144,5 +148,5 @@ func (c *Controller) UrlFor(routeName string, args ...string) *url.URL {
 }
 
 func (c *Controller) RedirectRoute(routeName string, args ...string) *RedirectResponse {
-	return NewRedirectResponse(c.UrlFor(routeName, args...).String(), 302)
+	return NewRedirectResponse(c.UrlFor(routeName, args...).String())
 }
