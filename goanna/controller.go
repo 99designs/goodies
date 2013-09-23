@@ -120,13 +120,13 @@ func (c *Controller) RenderTemplateResponse(t *template.Template, vars interface
 // Redirect returns a new RedirectResponse
 // (HTTP 302)
 func (c *Controller) Redirect(urlStr string) *RedirectResponse {
-	return NewRedirectResponse(urlStr, 302)
+	return NewRedirectResponse(urlStr)
 }
 
 // PermanentRedirect returns a new RedirectResponse with a permanent redirect
 // (HTTP 301)
 func (c *Controller) PermanentRedirect(urlStr string) *RedirectResponse {
-	return NewRedirectResponse(urlStr, 301)
+	return NewPermanentRedirectResponse(urlStr)
 }
 
 // Render renders a template using the provided template and vars struct
@@ -148,5 +148,5 @@ func (c *Controller) UrlFor(routeName string, args ...string) *url.URL {
 }
 
 func (c *Controller) RedirectRoute(routeName string, args ...string) *RedirectResponse {
-	return NewRedirectResponse(c.UrlFor(routeName, args...).String(), 302)
+	return NewRedirectResponse(c.UrlFor(routeName, args...).String())
 }
