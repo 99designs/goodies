@@ -1,6 +1,7 @@
 package goanna
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -19,52 +20,48 @@ func NewCookieSigner(cookieSecret string) CookieSigner {
 	return CookieSigner{signer: hmac.New(sha256.New, []byte(cookieSecret))}
 }
 
-func (c CookieSigner) EncodeCookie(cookie http.Cookie) *http.Cookie {
-	cookie.Value = c.encodeValue(cookie.Value)
-
-	return &cookie
+func (c CookieSigner) EncodeCookie(cookie *http.Cookie) {
+	cookie.Value = c.EncodeValue(cookie.Value)
 }
 
-func (c CookieSigner) DecodeCookie(cookie http.Cookie) (*http.Cookie, error) {
-	data, err := c.DecodeCookieBytes(cookie.Value)
+func (c CookieSigner) DecodeCookie(cookie *http.Cookie) error {
+	data, err := c.DecodeValue(cookie.Value)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	cookie.Value = string(data)
-	return &cookie, nil
+	cookie.Value = data
+
+	return nil
 }
 
-func (c CookieSigner) DecodeCookieBytes(cookieValue string) ([]byte, error) {
-	parts := strings.Split(cookieValue, ".")
+func (c CookieSigner) DecodeValue(encodedvalue string) (string, error) {
+	parts := strings.SplitN(encodedvalue, ".", 2)
 	if len(parts) != 2 {
-		return nil, errors.New("More than 2 parts")
+		return "", errors.New("Wrong number of parts")
 	}
-	rawdata, err := base64.URLEncoding.DecodeString(parts[0])
+	mac, err := base64.URLEncoding.DecodeString(parts[0])
+	value := parts[1]
+
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	if c.encodeValue(string(rawdata)) != cookieValue {
-		return nil, errors.New("Bad signature")
+	if !bytes.Equal(c.mac(value), mac) {
+		return "", errors.New("Bad signature")
 	}
-	return rawdata, nil
+
+	return value, nil
 }
 
-func (c CookieSigner) EncodeRawData(d []byte) string {
-	c.signer.Reset()
-	bytes := make([]byte, 0)
-	c.signer.Write(d)
-
+func (c CookieSigner) EncodeValue(value string) string {
 	return fmt.Sprintf("%s.%s",
-		base64.URLEncoding.EncodeToString([]byte(d)),
-		base64.URLEncoding.EncodeToString(c.signer.Sum(bytes)))
+		base64.URLEncoding.EncodeToString(c.mac(value)),
+		value)
 }
 
-func (c CookieSigner) encodeValue(data string) string {
+func (c CookieSigner) mac(data string) []byte {
 	c.signer.Reset()
 	bytes := make([]byte, 0)
 	fmt.Fprintf(c.signer, data)
 
-	return fmt.Sprintf("%s.%s",
-		base64.URLEncoding.EncodeToString([]byte(data)),
-		base64.URLEncoding.EncodeToString(c.signer.Sum(bytes)))
+	return c.signer.Sum(bytes)
 }
