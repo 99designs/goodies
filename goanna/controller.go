@@ -19,23 +19,23 @@ type ControllerInterface interface {
 
 type Controller struct {
 	Request
-	sessionStore SessionStore
-	logger       *log.Logger
+	sessionFinder SessionFinder
+	logger        *log.Logger
 }
 
 func (c *Controller) Session() Session {
 	if c.Request.session == nil {
-		c.Request.session = c.sessionStore.GetSession(&c.Request)
+		c.Request.session = c.sessionFinder(&c.Request)
 	}
 	return c.Request.session
 }
 
 // NewController instantiates a new Controller using the given request and session store
-func NewController(req *http.Request, sessionStore SessionStore) *Controller {
+func NewController(req *http.Request, sessionFinder SessionFinder) *Controller {
 	request := Request{Request: req}
 	c := Controller{
-		Request:      request,
-		sessionStore: sessionStore,
+		Request:       request,
+		sessionFinder: sessionFinder,
 	}
 	return &c
 }

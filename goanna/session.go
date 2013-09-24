@@ -4,16 +4,15 @@ import (
 	"time"
 )
 
-type SessionStore interface {
-	GetSession(*Request) Session
-}
+// SessionFinder finds a session based on the request
+type SessionFinder func(*Request) Session
 
 type Session interface {
+	GetId() string
 	Get(string) string
 	Set(string, string)
-	Expiry() time.Time
-	SetExpiry(t time.Time) time.Time
-	WriteToResponse(Response)
-	GetId() string
+	SetMaxAge(time.Duration)
+	HasExpired() bool
 	Clear()
+	WriteToResponse(Response)
 }
