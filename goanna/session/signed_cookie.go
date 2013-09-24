@@ -2,6 +2,7 @@
 package session
 
 import (
+	"encoding/base64"
 	"github.com/99designs/goodies/goanna"
 	"log"
 	"net/http"
@@ -36,13 +37,18 @@ func (ss signedCookieSessionHandler) getSessionData(request *http.Request) (*ses
 		return nil, err
 	}
 
-	raw, err := ss.CookieSigner.DecodeCookieBytes(cookie.Value)
+	err = ss.CookieSigner.DecodeCookie(cookie)
+	if err != nil {
+		return nil, err
+	}
+
+	decodedBytes, err := base64.URLEncoding.DecodeString(cookie.Value)
 	if err != nil {
 		return nil, err
 	}
 
 	sessionData := sessionData{}
-	err = sessionData.Marshal(raw)
+	err = sessionData.Marshal(decodedBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +56,7 @@ func (ss signedCookieSessionHandler) getSessionData(request *http.Request) (*ses
 	return &sessionData, nil
 }
 
-func (ss signedCookieSessionHandler) GetSession(request *goanna.Request) goanna.Session {
+func (ss signedCookieSessionHandler) GetSession(request *goanna.Request) SignedCookieSession {
 	session := SignedCookieSession{h: &ss}
 
 	// Internet Explorer 8 and below do not support MaxAge
@@ -80,14 +86,14 @@ func (ss signedCookieSessionHandler) writeToResponse(s SignedCookieSession, resp
 		log.Println(err.Error())
 	}
 
-	signedbytes := ss.CookieSigner.EncodeRawData(bytes)
-
 	cookie := http.Cookie{
 		Name:     ss.CookieName,
-		Value:    signedbytes,
+		Value:    base64.URLEncoding.EncodeToString(bytes),
 		HttpOnly: true,
 		Path:     "/",
 	}
+	ss.CookieSigner.EncodeCookie(&cookie)
+
 	maxage := int(s.MaxAge() / time.Second)
 	if maxage != 0 {
 		if s.preferExpires {
