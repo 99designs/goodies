@@ -2,11 +2,7 @@
 package session
 
 import (
-	"bytes"
-	"crypto/rand"
-	"encoding/gob"
-	"errors"
-	"fmt"
+	"encoding/base64"
 	"github.com/99designs/goodies/goanna"
 	"log"
 	"net/http"
@@ -17,160 +13,130 @@ const (
 	EXPIRY_KEY = "SESSION_EXPIRY_TIME"
 )
 
-type CookieSessionStore struct {
-	goanna.SessionStore
+type signedCookieSessionHandler struct {
 	goanna.CookieSigner
 	CookieName      string
 	DefaultDuration time.Duration
 }
 
-func NewCookieSessionStore(name, secret string, defaultDuration time.Duration) CookieSessionStore {
-	return CookieSessionStore{
+func NewSignedCookieSessionFinder(name, secret string, defaultDuration time.Duration) goanna.SessionFinder {
+	ss := signedCookieSessionHandler{
 		CookieSigner:    goanna.NewCookieSigner(secret),
 		CookieName:      name,
 		DefaultDuration: defaultDuration,
 	}
+
+	return func(r *goanna.Request) goanna.Session {
+		return ss.GetSession(r)
+	}
 }
 
-func (ss CookieSessionStore) getSessionData(request *http.Request) (*sessionData, error) {
+func (ss signedCookieSessionHandler) getSessionData(request *http.Request) (*sessionData, error) {
 	cookie, err := request.Cookie(ss.CookieName)
 	if err != nil {
 		return nil, err
 	}
-	return ss.decodeSessionData(cookie.Value)
-}
 
-func (ss CookieSessionStore) decodeSessionData(cv string) (*sessionData, error) {
-	raw, err := ss.CookieSigner.DecodeCookieBytes(cv)
+	err = ss.CookieSigner.DecodeCookie(cookie)
 	if err != nil {
 		return nil, err
 	}
-	return unmarshalSessionData(raw)
-}
 
-func marshalSessionData(sd sessionData) []byte {
-	buf := &bytes.Buffer{}
-	e := gob.NewEncoder(buf)
-	err := e.Encode(sd)
+	decodedBytes, err := base64.URLEncoding.DecodeString(cookie.Value)
 	if err != nil {
-		panic(err)
-	}
-
-	return buf.Bytes()
-}
-
-func unmarshalSessionData(raw []byte) (*sessionData, error) {
-	var data sessionData
-	buf := bytes.NewBuffer(raw)
-	d := gob.NewDecoder(buf)
-	err := d.Decode(&data)
-	if err != nil {
-		log.Println("Invalid session cookie: " + err.Error())
 		return nil, err
 	}
-	if data.Id == "" || data.Store == nil {
-		return nil, errors.New("Nil data in struct")
+
+	sessionData := sessionData{}
+	err = sessionData.Marshal(decodedBytes)
+	if err != nil {
+		return nil, err
 	}
-	return &data, nil
+
+	return &sessionData, nil
 }
 
-func (ss CookieSessionStore) GetSession(request *goanna.Request) goanna.Session {
-	session := SignedCookieSession{
-		name:          ss.CookieName,
-		CookieSigner:  ss.CookieSigner,
-		defaultExpiry: time.Now().Add(ss.DefaultDuration),
-		data:          &sessionData{},
+func (ss signedCookieSessionHandler) GetSession(request *goanna.Request) SignedCookieSession {
+	session := SignedCookieSession{h: &ss}
+
+	// Internet Explorer 8 and below do not support MaxAge
+	ieVersion, err := getInternetExplorerVersion(request.UserAgent())
+	if err == nil && ieVersion < 9 {
+		session.preferExpires = true
 	}
+
 	data, err := ss.getSessionData(request.Request)
-	if err != nil {
-		session.data = &sessionData{
-			Id:    generateSessionId(),
-			Store: make(map[string]string),
-		}
+
+	if err == nil {
+		session.sessionData = data
 	} else {
-		session.data = data
+		session.sessionData = NewSessionData()
+	}
+
+	if session.HasExpired() {
+		session.Clear()
 	}
 
 	return session
 }
 
-type sessionData struct {
-	Id    string
-	Store map[string]string
-}
-
-type SignedCookieSession struct {
-	name string
-	goanna.CookieSigner
-	defaultExpiry time.Time
-	data          *sessionData
-}
-
-func (s SignedCookieSession) GetId() string {
-	return s.data.Id
-}
-func (s SignedCookieSession) String() string {
-	return fmt.Sprintf("%+v", s.data)
-}
-
-func (s SignedCookieSession) Get(key string) string {
-	return s.data.Store[key]
-}
-
-func (s SignedCookieSession) Set(key string, value string) {
-	s.data.Store[key] = value
-}
-
-func (s SignedCookieSession) SetDefaultExpiry() time.Time {
-	s.SetExpiry(s.defaultExpiry)
-	return s.defaultExpiry
-}
-
-func (s SignedCookieSession) Expiry() time.Time {
-	expiryStr := s.Get(EXPIRY_KEY)
-	expiry, err := time.Parse(time.RFC3339, expiryStr)
+func (ss signedCookieSessionHandler) writeToResponse(s SignedCookieSession, resp goanna.Response) {
+	bytes, err := s.sessionData.Unmarshal()
 	if err != nil {
-		return s.SetDefaultExpiry()
+		log.Println(err.Error())
 	}
-	if expiry.After(s.defaultExpiry) {
-		return expiry
-	}
-	return s.SetDefaultExpiry()
-}
-
-func (s SignedCookieSession) SetExpiry(e time.Time) time.Time {
-	s.Set(EXPIRY_KEY, e.Format(time.RFC3339))
-	return e
-}
-
-func (s SignedCookieSession) WriteToResponse(resp goanna.Response) {
-	bytes := marshalSessionData(*s.data)
 
 	cookie := http.Cookie{
-		Name:     s.name,
-		Value:    s.CookieSigner.EncodeRawData(bytes),
-		Expires:  s.Expiry(),
+		Name:     ss.CookieName,
+		Value:    base64.URLEncoding.EncodeToString(bytes),
 		HttpOnly: true,
 		Path:     "/",
+	}
+	ss.CookieSigner.EncodeCookie(&cookie)
+
+	maxage := int(s.MaxAge() / time.Second)
+	if maxage != 0 {
+		if s.preferExpires {
+			cookie.Expires = time.Now().Add(s.MaxAge())
+		} else {
+			cookie.MaxAge = maxage
+		}
 	}
 	resp.SetCookie(cookie)
 }
 
-func (s SignedCookieSession) Clear() {
-	s.data.Id = generateSessionId()
-	s.data.Store = make(map[string]string)
+type SignedCookieSession struct {
+	*sessionData
+	h             *signedCookieSessionHandler
+	preferExpires bool
 }
 
-func generateSessionId() string {
-	return randString(22) // aprox 128 bits of entropy (62^22)
-}
-
-func randString(n int) string {
-	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	var bytes = make([]byte, n)
-	rand.Read(bytes)
-	for i, b := range bytes {
-		bytes[i] = alphanum[b%byte(len(alphanum))]
+func (s SignedCookieSession) MaxAge() time.Duration {
+	expiry, err := s.expiry()
+	if err == nil {
+		return expiry.Sub(time.Now())
+	} else if s.h.DefaultDuration > 0 {
+		return s.h.DefaultDuration
 	}
-	return string(bytes)
+
+	return 0
+}
+
+func (s SignedCookieSession) SetMaxAge(d time.Duration) {
+	expiry := time.Now().Add(d)
+	s.Set(EXPIRY_KEY, expiry.Format(time.RFC3339))
+}
+
+func (s SignedCookieSession) expiry() (time.Time, error) {
+	expiryStr := s.Get(EXPIRY_KEY)
+	return time.Parse(time.RFC3339, expiryStr)
+}
+
+func (s SignedCookieSession) HasExpired() bool {
+	expiry, err := s.expiry()
+	return err == nil && expiry.Before(time.Now())
+}
+
+func (s SignedCookieSession) WriteToResponse(resp goanna.Response) {
+	s.h.writeToResponse(s, resp)
 }
