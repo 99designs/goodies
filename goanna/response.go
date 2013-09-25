@@ -16,21 +16,25 @@ type Response interface {
 	Send(http.ResponseWriter)
 	SetCookie(http.Cookie)
 	ClearCookie(string)
-	GetStatusCode() int
+	Cookies() []http.Cookie
+	StatusCode() int
+	SetStatusCode(int)
 	Headers() http.Header
 }
 
 type OkResponse struct {
 	Header  http.Header
-	Cookies []http.Cookie
+	cookies []http.Cookie
 	Content []byte
+	Code    int
 }
 
 func NewResponse() *OkResponse {
 	return &OkResponse{
 		Header:  http.Header{},
-		Cookies: make([]http.Cookie, 0),
+		cookies: make([]http.Cookie, 0),
 		Content: make([]byte, 0),
+		Code:    http.StatusOK,
 	}
 }
 
@@ -40,13 +44,18 @@ func NewStringResponse(content string) Response {
 	return response
 }
 
+func (r *OkResponse) Cookies() []http.Cookie {
+	return r.cookies
+}
+
 func (r *OkResponse) Headers() http.Header {
 	return r.Header
 }
 
 func (r *OkResponse) SetCookie(cookie http.Cookie) {
-	r.Cookies = append(r.Cookies, cookie)
+	r.cookies = append(r.cookies, cookie)
 }
+
 func (r *OkResponse) ClearCookie(name string) {
 	c := http.Cookie{}
 	c.Name = name
@@ -61,7 +70,7 @@ func (r *OkResponse) SetContent(content []byte) {
 }
 
 func (r *OkResponse) SendHeaders(w http.ResponseWriter) {
-	for _, cookie := range r.Cookies {
+	for _, cookie := range r.cookies {
 		http.SetCookie(w, &cookie)
 	}
 
@@ -78,6 +87,7 @@ func (r *OkResponse) SendHeaders(w http.ResponseWriter) {
 
 func (r *OkResponse) Send(w http.ResponseWriter) {
 	r.SendHeaders(w)
+	w.WriteHeader(r.Code)
 	w.Write([]byte(r.Content))
 }
 
@@ -85,22 +95,25 @@ func (r *OkResponse) SetNoCache() {
 	r.Header.Set(HEADER_CACHE_CONTROL, HEADER_CACHE_NOCACHE)
 }
 
-func (r *OkResponse) GetStatusCode() int {
-	return 200
+func (r *OkResponse) StatusCode() int {
+	return r.Code
+}
+
+func (r *OkResponse) SetStatusCode(code int) {
+	r.Code = code
 }
 
 type ErrorResponse struct {
-	OkResponse
+	*OkResponse
 	Message string
-	Code    int
 }
 
 func NewErrorResponse(message string, code int) *ErrorResponse {
 	response := ErrorResponse{
-		OkResponse: *NewResponse(),
+		OkResponse: NewResponse(),
 		Message:    message,
-		Code:       code,
 	}
+	response.SetStatusCode(code)
 
 	return &response
 }
@@ -111,22 +124,27 @@ func (r *ErrorResponse) Send(w http.ResponseWriter) {
 	r.SetNoCache()
 }
 
-func (r *ErrorResponse) GetStatusCode() int {
-	return r.Code
-}
-
 type RedirectResponse struct {
-	OkResponse
+	*OkResponse
 	urlStr string
-	code   int
 }
 
-func NewRedirectResponse(urlStr string, code int) *RedirectResponse {
+func NewPermanentRedirectResponse(urlStr string) *RedirectResponse {
 	response := RedirectResponse{
-		OkResponse: *NewResponse(),
+		OkResponse: NewResponse(),
 		urlStr:     urlStr,
-		code:       code,
 	}
+	response.SetStatusCode(http.StatusMovedPermanently)
+
+	return &response
+}
+
+func NewRedirectResponse(urlStr string) *RedirectResponse {
+	response := RedirectResponse{
+		OkResponse: NewResponse(),
+		urlStr:     urlStr,
+	}
+	response.SetStatusCode(http.StatusFound)
 
 	return &response
 }
@@ -134,14 +152,11 @@ func NewRedirectResponse(urlStr string, code int) *RedirectResponse {
 func (r *RedirectResponse) Send(w http.ResponseWriter) {
 	w.Header().Set("Location", r.urlStr)
 	r.SendHeaders(w)
-	w.WriteHeader(r.code)
+	w.WriteHeader(r.Code)
 }
 
 func (r *RedirectResponse) Target() string {
 	return r.urlStr
-}
-func (r *RedirectResponse) Code() int {
-	return r.code
 }
 
 func NewJsonResponse(data interface{}) *OkResponse {
@@ -162,7 +177,7 @@ func NewJsonpResponse(callback string, data interface{}) *OkResponse {
 	if err != nil {
 		log.Panicln("Bad data for json marshalling")
 	}
-	body := append([]byte(callback + "("), json...)
+	body := append([]byte(callback+"("), json...)
 	body = append(body, []byte(");")...)
 
 	response := NewResponse()

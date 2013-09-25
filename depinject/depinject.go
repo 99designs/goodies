@@ -45,6 +45,13 @@ func (di *DependencyInjector) Register(constructorFunc interface{}) error {
 	return nil
 }
 
+func (di *DependencyInjector) MustRegister(constructorFunc interface{}) {
+	err := di.Register(constructorFunc)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // Create creates an instance of the type of the given parameter
 func (di *DependencyInjector) Create(avar interface{}) interface{} {
 	return di.CreateFromType(reflect.TypeOf(avar)).Interface()

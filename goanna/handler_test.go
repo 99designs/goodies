@@ -4,7 +4,6 @@ import (
 	. "launchpad.net/gocheck"
 	"net/http"
 	"testing"
-	"time"
 )
 
 type HandlerSuite struct {
@@ -12,7 +11,7 @@ type HandlerSuite struct {
 }
 
 type TestController struct {
-	*Controller
+	Controller
 	Response
 }
 
@@ -26,13 +25,15 @@ func (s *HandlerSuite) TestCreateLoginToken(c *C) {
 	factory := func() ControllerInterface { return &s.TestController }
 	h := NewHandler(factory, "ControllerMethod")
 
-	s.TestController.Controller = NewController(req, nil)
+	s.TestController.Controller = NewController(nil)
+	s.TestController.Controller.SetRequest(req)
 	s.TestController.Response = NewResponse()
 	resp := h.getResponse(req)
 	c.Check(resp, Equals, s.TestController.Response)
 }
 
-func (s *TestController) Init(*http.Request)         {}
+func (s *TestController) Init()                      {}
+func (s *TestController) SetRequest(*http.Request)   {}
 func (s *TestController) Session() Session           { return NopSession{} }
 func (s *TestController) ControllerMethod() Response { return s.Response }
 
@@ -42,14 +43,3 @@ func Must(r *http.Request, e error) *http.Request {
 	}
 	return r
 }
-
-type NopSession struct {
-}
-
-func (s NopSession) Get(_ string) string             { return "" }
-func (s NopSession) Set(_string, _ string)           {}
-func (s NopSession) Expiry() time.Time               { return time.Now() }
-func (s NopSession) SetExpiry(_ time.Time) time.Time { return time.Now() }
-func (s NopSession) WriteToResponse(_ Response)      {}
-func (s NopSession) GetId() string                   { return "" }
-func (s NopSession) Clear()                          {}

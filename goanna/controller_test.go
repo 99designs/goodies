@@ -18,7 +18,8 @@ func TestErrorLogging(t *testing.T) { TestingT(t) }
 
 func (s *ControllerSuite) TestErrorLogging(c *C) {
 	req, _ := http.NewRequest("GET", "/", nil)
-	con := NewController(req, nil)
+	con := NewController(nil)
+	con.SetRequest(req)
 	output := bytes.Buffer{}
 	con.logger = log.New(&output, "", 0)
 	con.LogRequest("Just for testing")
