@@ -4,30 +4,27 @@ import (
 	"time"
 )
 
-type SessionStore interface {
-	GetSession(*Request) Session
-}
+// SessionFinder finds a session based on the request
+type SessionFinder func(*Request) Session
 
 type Session interface {
+	GetId() string
 	Get(string) string
 	Set(string, string)
-	Expiry() time.Time
-	SetExpiry(t time.Time) time.Time
-	WriteToResponse(Response)
-	GetId() string
+	SetMaxAge(time.Duration)
+	HasExpired() bool
 	Clear()
+	WriteToResponse(Response)
 }
 
-type NopSessionStore struct{}
-
-func (s NopSessionStore) GetSession(_ *Request) Session { return &NopSession{} }
+func NopSessionFinder(_ *Request) Session { return &NopSession{} }
 
 type NopSession struct{}
 
-func (s NopSession) Get(_ string) string             { return "" }
-func (s NopSession) Set(_string, _ string)           {}
-func (s NopSession) Expiry() time.Time               { return time.Now() }
-func (s NopSession) SetExpiry(_ time.Time) time.Time { return time.Now() }
-func (s NopSession) WriteToResponse(_ Response)      {}
-func (s NopSession) GetId() string                   { return "" }
-func (s NopSession) Clear()                          {}
+func (s NopSession) GetId() string              { return "" }
+func (s NopSession) Get(_ string) string        { return "" }
+func (s NopSession) Set(_string, _ string)      {}
+func (s NopSession) SetMaxAge(_ time.Duration)  {}
+func (s NopSession) HasExpired() bool           { return false }
+func (s NopSession) Clear()                     {}
+func (s NopSession) WriteToResponse(_ Response) {}

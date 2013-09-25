@@ -1,20 +1,39 @@
 package goanna
 
 import (
-	e "github.com/99designs/goodies/test/expect"
 	"net/http"
 	"testing"
 )
 
 func TestEncode(t *testing.T) {
-	c := NewCookieSigner("TESTSECRET")
+	cs := NewCookieSigner("TESTSECRET")
 
-	e.Expect(t, "Cookie value", c.encodeValue("Foo"), "Rm9v.shZ0lvgf-z5Rh7sfuzRZatPN0Y1LCJ54GCf0Tq8X0f8=")
-	e.Expect(t, "Full cookie string", c.EncodeCookie(http.Cookie{Name: "userid", Value: "Foo"}).String(), "userid=Rm9v.shZ0lvgf-z5Rh7sfuzRZatPN0Y1LCJ54GCf0Tq8X0f8=")
+	v := "foo.bar"
+	v1 := cs.EncodeValue(v)
+	v2, err2 := cs.DecodeValue(v1)
+	_, err3 := cs.DecodeValue(v1 + "blah")
 
-	cookie, _ := c.DecodeCookie(http.Cookie{Name: "userid", Value: "Rm9v.shZ0lvgf-z5Rh7sfuzRZatPN0Y1LCJ54GCf0Tq8X0f8="})
-	e.Expect(t, "Decode valid cookie string", cookie.Value, "Foo")
+	if v == v1 {
+		t.Error("Values should not be equal")
+	}
+	if v != v2 {
+		t.Errorf("Expected %s, got %s", v, v2)
+		t.Error(err2)
+	}
+	if err3 == nil {
+		t.Error("Should have an error")
+	}
 
-	_, err := c.DecodeCookie(http.Cookie{Name: "userid", Value: "Rm9av.shZ0lvgf-z5Rh7sfuzRZatPN0Y1LCJ54GCf0Tq8X0f8="})
-	e.Expect(t, "Decode invalid cookie string", err.Error(), "illegal base64 data at input byte 4")
+	val := "Rm9av.shZ0lvgf-z5Rh7sfuzRZatPN0Y1LCJ54GCf0Tq8X0f8="
+	c := http.Cookie{Name: "userid", Value: val}
+	cs.EncodeCookie(&c)
+
+	if val == c.Value {
+		t.Error("Values should not be equal")
+	}
+
+	cs.DecodeCookie(&c)
+	if v != v2 {
+		t.Error("Values should be equal")
+	}
 }
