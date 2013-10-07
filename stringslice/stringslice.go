@@ -33,7 +33,7 @@ func RemoveStringsFromString(s string, substrs []string) string {
 	return s
 }
 
-// MapStringSlice returns a slice containing all the elements of ss
+// Map returns a slice containing all the elements of ss
 // after applying the callback function to each one
 func Map(ss []string, callback func(string) string) []string {
 	newStrings := make([]string, len(ss))
