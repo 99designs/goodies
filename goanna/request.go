@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// Request decorates a http.Request to add helper methods
 type Request struct {
 	*http.Request
 	session  Session
@@ -14,6 +15,7 @@ type Request struct {
 	bodyRead bool
 }
 
+// CookieValue returns the value of the named cookie
 func (r *Request) CookieValue(name string) string {
 	c, err := r.Cookie(name)
 	if err != nil {
@@ -22,6 +24,7 @@ func (r *Request) CookieValue(name string) string {
 	return c.Value
 }
 
+// BodyData returns the full request body
 func (r *Request) BodyData() []byte {
 	var err error
 	if !r.bodyRead {
@@ -43,6 +46,7 @@ func (r *Request) BodyData() []byte {
 	return r.bodyData
 }
 
+// QueryValue returns the value in the GET query string
 func (r *Request) QueryValue(key string) string {
 	return r.URL.Query().Get(key)
 }

@@ -8,28 +8,44 @@ import (
 	"net/http"
 	"net/url"
 	"runtime/debug"
-	"strings"
 	"time"
 )
 
+const diagnosticTemplate = `
+*** Diagnostic Log ***
+Reason for diagnostic: %s
+Url: %s
+Method: %s
+Timestamp: %s
+****** Request Headers ******
+%s
+******* Request Body ********
+%s
+******** Stack trace ********
+%s
+-----------------------------
+`
+
+// ControllerInterface is implemented by controllers
 type ControllerInterface interface {
 	Init()
 	Session() Session
 	SetRequest(*http.Request)
 }
 
+// Controller is an embeddable type for controllers
 type Controller struct {
 	Request       *Request
 	sessionFinder SessionFinder
 	logger        *log.Logger
 }
 
-func (c *Controller) Init() {}
-
+// SetRequest injects a request into the controller
 func (c *Controller) SetRequest(req *http.Request) {
 	c.Request = &Request{Request: req}
 }
 
+// Session returns the session for the current request
 func (c *Controller) Session() Session {
 	if c.Request.session == nil {
 		c.Request.session = c.sessionFinder(c.Request)
@@ -44,7 +60,7 @@ func NewController(sessionFinder SessionFinder) Controller {
 	}
 }
 
-// IsGetRequest() returns whether the request is GET
+// IsGetRequest returns whether the request is GET
 func (c *Controller) IsGetRequest() bool {
 	return c.Request.Method == "GET"
 }
@@ -59,20 +75,7 @@ func (c *Controller) LogRequest(reason string) {
 		l = c.logger.Printf
 	}
 	l(
-		`
-*** Diagnostic Log ***
-Reason for diagnostic: %s
-Url: %s
-Method: %s
-Timestamp: %s
-****** Request Headers ******
-%s
-******* Request Body ********
-%s
-******** Stack trace ********
-%s
------------------------------
-`,
+		diagnosticTemplate,
 		reason,
 		c.Request.URL.String(),
 		c.Request.Method,
@@ -83,7 +86,7 @@ Timestamp: %s
 	)
 }
 
-// IsGetRequest() returns whether the request is POST
+// IsPostRequest returns whether the request is POST
 func (c *Controller) IsPostRequest() bool {
 	return c.Request.Method == "POST"
 }
@@ -93,7 +96,7 @@ func (c *Controller) IsPostRequest() bool {
 func (c *Controller) RenderView(templateStr string, vars interface{}) []byte {
 	t, err := template.New("RenderView").Parse(templateStr)
 	if err != nil {
-		log.Panicln(err)
+		panic(err.Error())
 	}
 	return c.RenderTemplate(t, vars)
 }
@@ -104,7 +107,7 @@ func (c *Controller) RenderTemplate(t *template.Template, vars interface{}) []by
 	out := bytes.NewBuffer(nil)
 	err := t.Execute(out, vars)
 	if err != nil {
-		log.Panicln(err)
+		panic(err.Error())
 	}
 	return out.Bytes()
 }
@@ -129,6 +132,11 @@ func (c *Controller) PermanentRedirect(urlStr string) *RedirectResponse {
 	return NewPermanentRedirectResponse(urlStr)
 }
 
+// RedirectRoute returns a RedirectResponse to the route
+func (c *Controller) RedirectRoute(routeName string, args ...string) *RedirectResponse {
+	return NewRedirectResponse(c.UrlFor(routeName, args...).String())
+}
+
 // Render renders a template using the provided template and vars struct
 // and returns a response with the rendered template
 func (c *Controller) Render(templateStr string, vars interface{}) *OkResponse {
@@ -137,16 +145,7 @@ func (c *Controller) Render(templateStr string, vars interface{}) *OkResponse {
 	return response
 }
 
-// CookieHost returns the request's hostname suitable for use in cookies
-// by stripping the port and appending a '.'
-func (c *Controller) CookieHost() string {
-	return "." + strings.Split(c.Request.Host, ":")[0]
-}
-
+// UrlFor is helper function for controllers
 func (c *Controller) UrlFor(routeName string, args ...string) *url.URL {
 	return UrlFor(routeName, args...)
-}
-
-func (c *Controller) RedirectRoute(routeName string, args ...string) *RedirectResponse {
-	return NewRedirectResponse(c.UrlFor(routeName, args...).String())
 }

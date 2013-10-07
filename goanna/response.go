@@ -12,6 +12,7 @@ const (
 	HEADER_CACHE_NOCACHE = "no-cache"
 )
 
+// Response is a http response that can be built up
 type Response interface {
 	Send(http.ResponseWriter)
 	SetCookie(http.Cookie)
