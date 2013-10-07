@@ -1,7 +1,6 @@
 package goanna
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -12,18 +11,23 @@ import (
 	"strings"
 )
 
+// CookieSigner signs a cookie with a sha236 hmac
+// to ensure that it cannot be tampered with
 type CookieSigner struct {
 	signer hash.Hash
 }
 
-func NewCookieSigner(cookieSecret string) CookieSigner {
-	return CookieSigner{signer: hmac.New(sha256.New, []byte(cookieSecret))}
+// NewCookieSigner returns a new CookieSigner using the given key
+func NewCookieSigner(key []byte) CookieSigner {
+	return CookieSigner{signer: hmac.New(sha256.New, key)}
 }
 
+// EncodeCookie signs and encodes the cookie
 func (c CookieSigner) EncodeCookie(cookie *http.Cookie) {
 	cookie.Value = c.EncodeValue(cookie.Value)
 }
 
+// DecodeCookie verifies the signature and decodes the value into the cookie
 func (c CookieSigner) DecodeCookie(cookie *http.Cookie) error {
 	data, err := c.DecodeValue(cookie.Value)
 	if err != nil {
@@ -34,6 +38,7 @@ func (c CookieSigner) DecodeCookie(cookie *http.Cookie) error {
 	return nil
 }
 
+// DecodeValue validates and decodes a cookie value
 func (c CookieSigner) DecodeValue(encodedvalue string) (string, error) {
 	parts := strings.SplitN(encodedvalue, ".", 2)
 	if len(parts) != 2 {
@@ -45,13 +50,14 @@ func (c CookieSigner) DecodeValue(encodedvalue string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if !bytes.Equal(c.mac(value), mac) {
+	if !hmac.Equal(c.mac(value), mac) {
 		return "", errors.New("Bad signature")
 	}
 
 	return value, nil
 }
 
+// EncodeValue signs and encodes a cookie value
 func (c CookieSigner) EncodeValue(value string) string {
 	return fmt.Sprintf("%s.%s",
 		base64.URLEncoding.EncodeToString(c.mac(value)),

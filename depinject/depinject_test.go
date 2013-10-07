@@ -26,7 +26,7 @@ func TestInject(t *testing.T) {
 	di := NewDependencyInjector()
 
 	err1 := di.Register(NewAtype)
-	if err1 != ConstructorArgsErr {
+	if err1 == nil {
 		t.Error("Expected an error")
 	}
 
@@ -54,7 +54,7 @@ func TestService(t *testing.T) {
 	di := NewServiceContainer()
 
 	err1 := di.Register(NewAtype)
-	if err1 != ConstructorArgsErr {
+	if err1 == nil {
 		t.Error("Expected an error")
 	}
 

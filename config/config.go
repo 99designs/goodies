@@ -1,28 +1,33 @@
-// Package config reads a JSON formatted configuration file into an arbitrary struct
+// Package config provides helper functions for reading a
+// JSON formatted configuration file into an arbitrary struct
 package config
 
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 )
 
-func Load(path string, c interface{}) {
-	Parse(Read(path), c)
+// Load reads the JSON-encoded file and marshalls
+// the contents into the value pointed at by v.
+// Panics if unsuccessful
+func Load(filename string, v interface{}) {
+	Parse(read(filename), v)
 }
 
-func Read(path string) []byte {
-	configJson, openerr := ioutil.ReadFile(path)
-	if openerr != nil {
-		log.Fatal("Could not open config file: ", openerr)
+func read(filename string) []byte {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err.Error())
 	}
-	return configJson
+	return data
 }
 
-func Parse(configJson []byte, c interface{}) {
-	parseError := json.Unmarshal(configJson, c)
-
-	if parseError != nil {
-		log.Fatal("Could not parse config file: ", parseError)
+// Parse parses the JSON-encoded data and stores the result
+// into the value pointed at by c.
+// Panics if unsuccessful
+func Parse(jsondata []byte, v interface{}) {
+	err := json.Unmarshal(jsondata, v)
+	if err != nil {
+		panic(err.Error())
 	}
 }

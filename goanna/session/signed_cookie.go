@@ -19,9 +19,9 @@ type signedCookieSessionHandler struct {
 	DefaultDuration time.Duration
 }
 
-func NewSignedCookieSessionFinder(name, secret string, defaultDuration time.Duration) goanna.SessionFinder {
+func NewSignedCookieSessionFinder(name string, key []byte, defaultDuration time.Duration) goanna.SessionFinder {
 	ss := signedCookieSessionHandler{
-		CookieSigner:    goanna.NewCookieSigner(secret),
+		CookieSigner:    goanna.NewCookieSigner(key),
 		CookieName:      name,
 		DefaultDuration: defaultDuration,
 	}
