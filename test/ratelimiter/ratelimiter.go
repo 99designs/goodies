@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 )
 
 var target = flag.String("url", "", "The URL to test rate-limiting against")
@@ -17,12 +18,13 @@ var min_successes = flag.Int("min_successes", 10, "The minimum number of request
 var min_limited_responses = flag.Int("min_limited_responses", 85, "The minimum number of requests that should receive a ratelimiting code")
 
 func main() {
+	var wg sync.WaitGroup
 	flag.Parse()
-	errors := make(chan error)
-	results := make(chan *http.Response)
+	errors := make(chan error, *total)
+	results := make(chan *http.Response, *total)
 
-	finished := 0
-	for i := 0; i <= *total; i++ {
+	for i := 0; i < *total; i++ {
+		wg.Add(1)
 		go func() {
 			resp, err := http.Get(*target)
 			if err != nil {
@@ -30,35 +32,29 @@ func main() {
 			} else {
 				results <- resp
 			}
-			finished += 1
-			if finished >= *total {
-				close(errors)
-				close(results)
-			}
+			wg.Done()
 		}()
 	}
 
+	wg.Wait()
+	close(errors)
+	close(results)
+
+	anyErrors := false
 	statusCodeHist := make(map[int]int)
-	func() {
-		for {
-			select {
-			case err := <-errors:
-				if err != nil {
-					fmt.Println("Error: " + err.Error())
-				}
-				if finished >= *total {
-					return
-				}
-			case res := <-results:
-				if res != nil {
-					statusCodeHist[res.StatusCode] += 1
-				}
-				if finished >= *total {
-					return
-				}
-			}
+	for err := range errors {
+		if err != nil {
+			fmt.Println("Error: " + err.Error())
+			anyErrors = true
 		}
-	}()
+	}
+
+	for res := range results {
+		if res != nil {
+			statusCodeHist[res.StatusCode] += 1
+		}
+	}
+
 	fmt.Printf("Response Histogram: %+v\n", statusCodeHist)
 	if *min_successes > statusCodeHist[*success_status] {
 		fmt.Printf("Needed %d requests to be successful, got %d\n", *min_successes, statusCodeHist[*success_status])
@@ -66,6 +62,9 @@ func main() {
 	}
 	if *min_limited_responses > statusCodeHist[*ratelimited_status] {
 		fmt.Printf("Needed %d requests to be ratelimited, got %d\n", *min_limited_responses, statusCodeHist[*ratelimited_status])
+		os.Exit(1)
+	}
+	if anyErrors {
 		os.Exit(1)
 	}
 }
