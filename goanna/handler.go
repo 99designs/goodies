@@ -3,18 +3,20 @@ package goanna
 import (
 	"fmt"
 	"github.com/gorilla/mux"
-	"log"
 	"net/http"
 	"reflect"
 )
 
 type ControllerFactoryFunc func() ControllerInterface
 
+// ControllerHandler is a http.Handler for handling incoming requests
+// and despatching to controllers
 type ControllerHandler struct {
 	factory    ControllerFactoryFunc
 	methodName string
 }
 
+// ServeHTTP handles a http request
 func (handler ControllerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handler.getResponse(r).Send(w)
 }
@@ -33,20 +35,24 @@ func (handler ControllerHandler) getResponse(r *http.Request) Response {
 	for _, val := range mux.Vars(r) {
 		args = append(args, reflect.ValueOf(val))
 	}
+
+	// make sure number of args matches the controller method
 	expected := len(args)
 	actual := method.Type().NumIn()
 	if expected != actual {
-		log.Panic(fmt.Sprintf("Method '%s' has %d args, expected %d", handler.methodName, actual, expected))
+		panic(fmt.Sprintf("Method '%s' has %d args, expected %d", handler.methodName, actual, expected))
 	}
 
 	out := method.Call(args)
 	if out[0].IsNil() {
-		return NewErrorResponse("Response from controller was nil", http.StatusInternalServerError)
+		panic("Response from controller was nil")
 	}
+
 	resp := out[0].Interface().(Response)
 	if resp == nil {
-		return NewErrorResponse("Response from controller was not Response interface", http.StatusInternalServerError)
+		panic("Response from controller was not Response interface")
 	}
+
 	controller.Session().WriteToResponse(resp)
 	return resp
 }
@@ -72,10 +78,11 @@ func (handler ControllerHandler) isValid() bool {
 
 }
 
+// NewHandler creates a ControllerHandler from the factory and methodName
 func NewHandler(factory ControllerFactoryFunc, methodName string) ControllerHandler {
 	handler := ControllerHandler{factory: factory, methodName: methodName}
 	if !handler.isValid() {
-		log.Panic("Invalid handler: " + methodName)
+		panic("Invalid handler: " + methodName)
 	}
 	return handler
 }

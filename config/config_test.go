@@ -1,39 +1,50 @@
 package config
 
 import (
-	e "github.com/99designs/goodies/test/expect"
 	"testing"
 )
 
 type ApplicationConfig struct {
 	BindAddress              string
 	DatabaseConnectionString string
-	Clients                  []ConfigClient
+	MoreStuff                []NestedConfig
 }
 
-type ConfigClient struct {
-	Name string
-	Key  string
+type NestedConfig struct {
+	Foo string
+	Bar string
 }
 
 func TestParse(t *testing.T) {
 	sampleConfig := `
 {
   "BindAddress": ":8008",
-  "DatabaseConnectionString": "contests/auth/auth",
-  "Clients": [
+  "DatabaseConnectionString": "dbname/user/pass",
+  "MoreStuff": [
     {
-      "Name": "contests",
-      "Key": "ContestsAuthDevelopmentPSK"
+      "Foo": "bar",
+      "Bar": "baz"
     }
   ]
 }
   `
+
 	var c ApplicationConfig
 	Parse([]byte(sampleConfig), &c)
-	e.Expect(t, "Bind address", c.BindAddress, ":8008")
-	e.Expect(t, "DB connection string", c.DatabaseConnectionString, "contests/auth/auth")
-	e.Expect(t, "Number of clients", len(c.Clients), 1)
-	e.Expect(t, "Client URI", c.Clients[0].Key, "ContestsAuthDevelopmentPSK")
-	e.Expect(t, "Client URI", c.Clients[0].Name, "contests")
+
+	if c.BindAddress != ":8008" {
+		t.Error("Unexpected value in BindAddress")
+	}
+	if c.DatabaseConnectionString != "dbname/user/pass" {
+		t.Error("Unexpected value in DatabaseConnectionString")
+	}
+	if len(c.MoreStuff) != 1 {
+		t.Error("Unexpected length of MoreStuff")
+	}
+	if c.MoreStuff[0].Foo != "bar" {
+		t.Error("Unexpected value in c.MoreStuff[0].Foo")
+	}
+	if c.MoreStuff[0].Bar != "baz" {
+		t.Error("Unexpected value in c.MoreStuff[0].Bar")
+	}
 }

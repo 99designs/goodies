@@ -1,21 +1,30 @@
-// Package depinject implements a simple
-// Dependency Injector
+// Package depinject provides a simple Dependency Injector.
+//
+// Dependency injection is a useful pattern that allows you to standardise and
+// centralise the way types are constructed.
+//
+// This DI container allows you to Register constructor closures for the
+// types that you need, and Create types on demand.
+//
+// With well defined constructors that use dependency injection for all required
+// dependencies, a full dependency tree can be built up. This means that dependencies
+// will cascade from your initial Create. You should aim to keep calls to Create to a
+// minimum and allow dependencies to cascade.
 package depinject
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"reflect"
 )
 
 var (
-	ConstructorErr     = errors.New("Constructor must be a function and output 1 parameter")
-	ConstructorArgsErr = errors.New("Can't resolve function arguments")
+	constructorErr = errors.New("Constructor must be a function and output 1 parameter")
 )
 
 // DependencyInjector is a simple IOC container
 // that allows registering constructor functions
-// and creating them
+// and creating types
 type DependencyInjector struct {
 	registry map[reflect.Type]interface{}
 }
@@ -26,7 +35,7 @@ func (di *DependencyInjector) Register(constructorFunc interface{}) error {
 	constructorType := reflect.TypeOf(constructorFunc)
 
 	if (constructorType.Kind() != reflect.Func) || (constructorType.NumOut() != 1) {
-		return ConstructorErr
+		return constructorErr
 	}
 	outType := constructorType.Out(0)
 
@@ -35,8 +44,7 @@ func (di *DependencyInjector) Register(constructorFunc interface{}) error {
 		inType := constructorType.In(i)
 		_, ok := di.registry[inType]
 		if !ok {
-			log.Printf("Can't find a %s for a %s\n", inType, outType)
-			return ConstructorArgsErr
+			return fmt.Errorf("Can't resolve function arguments - can't find a %s for a %s\n", inType, outType)
 		}
 	}
 
@@ -45,6 +53,7 @@ func (di *DependencyInjector) Register(constructorFunc interface{}) error {
 	return nil
 }
 
+// MustRegister is a helper that calls Register and panics if it returns an error
 func (di *DependencyInjector) MustRegister(constructorFunc interface{}) {
 	err := di.Register(constructorFunc)
 	if err != nil {
@@ -61,7 +70,7 @@ func (di *DependencyInjector) Create(avar interface{}) interface{} {
 func (di *DependencyInjector) CreateFromType(atype reflect.Type) reflect.Value {
 	constructor, exists := di.registry[atype]
 	if !exists {
-		log.Panicf("Can't find a mapping to create a %s", atype)
+		panic(fmt.Sprintf("Can't find a mapping to create a %s", atype))
 	}
 
 	constructorType := reflect.TypeOf(constructor)
@@ -78,6 +87,7 @@ func (di *DependencyInjector) CreateFromType(atype reflect.Type) reflect.Value {
 	return newObj[0]
 }
 
+// NewDependencyInjector returns a new DependencyInjector
 func NewDependencyInjector() DependencyInjector {
 	return DependencyInjector{
 		registry: make(map[reflect.Type]interface{}),

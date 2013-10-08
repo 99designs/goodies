@@ -6,7 +6,7 @@ import (
 )
 
 func TestEncode(t *testing.T) {
-	cs := NewCookieSigner("TESTSECRET")
+	cs := NewCookieSigner([]byte("TESTSECRET"))
 
 	v := "foo.bar"
 	v1 := cs.EncodeValue(v)

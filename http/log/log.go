@@ -54,14 +54,14 @@ func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 	lh.logger.Println(logOutput.String())
 }
 
-const DefaultFormat = `{{ or .Req.RemoteAddr '-' }} {{ or .UrlUsername '-' }} - [{{ or .CLFFormatStartTime '-' }}] "{{ or .Req.Method '-' }} {{ or .Req.RequestURI '-' }} {{ or .Req.Proto '-' }}" {{ or .Rw.Status '-' }} {{ or .Rw.Size '-' }}`
-const DefaultFormatUsingXForwardedFor = `{{ or ( .Req.Header.Get "X-Forwarded-For" ) '-' }} {{ or .UrlUsername '-' }} - [{{ or .CLFFormatStartTime '-' }}] "{{ or .Req.Method '-' }} {{ or .Req.RequestURI '-' }} {{ or .Req.Proto '-' }}" {{ or .Rw.Status '-' }} {{ or .Rw.Size '-' }}`
-const DefaultFormatStrippingQueries = `{{ or .Req.RemoteAddr '-' }} {{ or .UrlUsername '-' }} - [{{ or .CLFFormatStartTime '-' }}] "{{ or .Req.Method '-' }} {{ or .Req.URL.Path '-' }} {{ or .Req.Proto '-' }}" {{ or .Rw.Status '-' }} {{ or .Rw.Size '-' }}`
+const CommonLogFormat = `{{ or .Req.RemoteAddr '-' }} {{ or .UrlUsername '-' }} - [{{ or .CLFFormatStartTime '-' }}] "{{ or .Req.Method '-' }} {{ or .Req.RequestURI '-' }} {{ or .Req.Proto '-' }}" {{ or .Rw.Status '-' }} {{ or .Rw.Size '-' }}`
+const CommonLogFormatUsingXForwardedFor = `{{ or ( .Req.Header.Get "X-Forwarded-For" ) '-' }} {{ or .UrlUsername '-' }} - [{{ or .CLFFormatStartTime '-' }}] "{{ or .Req.Method '-' }} {{ or .Req.RequestURI '-' }} {{ or .Req.Proto '-' }}" {{ or .Rw.Status '-' }} {{ or .Rw.Size '-' }}`
+const CommonLogFormatStrippingQueries = `{{ or .Req.RemoteAddr '-' }} {{ or .UrlUsername '-' }} - [{{ or .CLFFormatStartTime '-' }}] "{{ or .Req.Method '-' }} {{ or .Req.URL.Path '-' }} {{ or .Req.Proto '-' }}" {{ or .Rw.Status '-' }} {{ or .Rw.Size '-' }}`
 
 var DefaultFormatter *template.Template
 
 func init() {
-	DefaultFormatter = template.Must(template.New("").Parse(DefaultFormat))
+	DefaultFormatter = template.Must(template.New("").Parse(CommonLogFormat))
 }
 
 type LoggableData struct {

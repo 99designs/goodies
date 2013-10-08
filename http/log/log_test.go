@@ -24,7 +24,7 @@ func setupTestServer(format string) (*httptest.Server, *bytes.Buffer) {
 }
 
 func TestCommonLogHandler(t *testing.T) {
-	ts, logw := setupTestServer(DefaultFormat)
+	ts, logw := setupTestServer(CommonLogFormat)
 	defer ts.Close()
 	req, err := http.NewRequest("GET", ts.URL+"/foo/bar", nil)
 	panicIf(err)
@@ -40,7 +40,7 @@ func TestCommonLogHandler(t *testing.T) {
 }
 
 func TestXForwardedLogger(t *testing.T) {
-	ts, logw := setupTestServer(DefaultFormatUsingXForwardedFor)
+	ts, logw := setupTestServer(CommonLogFormatUsingXForwardedFor)
 	req, err := http.NewRequest("GET", ts.URL+"/foo/bar", nil)
 	panicIf(err)
 	req.Header.Add("X-Forwarded-For", "xff_value")
@@ -56,7 +56,7 @@ func TestXForwardedLogger(t *testing.T) {
 }
 
 func TestStripQuery(t *testing.T) {
-	ts, logw := setupTestServer(DefaultFormatStrippingQueries)
+	ts, logw := setupTestServer(CommonLogFormatStrippingQueries)
 	req, err := http.NewRequest("GET", ts.URL+"/foo/bar?baz=qux", nil)
 	panicIf(err)
 	res, err := http.DefaultClient.Do(req)

@@ -11,6 +11,7 @@ type cacheDecorator struct {
 	maxage   uint
 }
 
+// CacheControl decorates a handler and adds Cache-Control headers
 func CacheControl(maxage uint, delegate http.Handler) http.Handler {
 	return &cacheDecorator{delegate, maxage}
 }
