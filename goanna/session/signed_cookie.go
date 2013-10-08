@@ -17,13 +17,15 @@ type signedCookieSessionHandler struct {
 	goanna.CookieSigner
 	CookieName      string
 	DefaultDuration time.Duration
+	Secure          bool
 }
 
-func NewSignedCookieSessionFinder(name string, key []byte, defaultDuration time.Duration) goanna.SessionFinder {
+func NewSignedCookieSessionFinder(name string, key []byte, defaultDuration time.Duration, secure bool) goanna.SessionFinder {
 	ss := signedCookieSessionHandler{
 		CookieSigner:    goanna.NewCookieSigner(key),
 		CookieName:      name,
 		DefaultDuration: defaultDuration,
+		Secure:          secure,
 	}
 
 	return func(r *goanna.Request) goanna.Session {
@@ -90,6 +92,7 @@ func (ss signedCookieSessionHandler) writeToResponse(s SignedCookieSession, resp
 		Name:     ss.CookieName,
 		Value:    base64.URLEncoding.EncodeToString(bytes),
 		HttpOnly: true,
+		Secure:   ss.Secure,
 		Path:     "/",
 	}
 	ss.CookieSigner.EncodeCookie(&cookie)
