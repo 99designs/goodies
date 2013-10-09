@@ -8,7 +8,7 @@ import (
 )
 
 func TestSessionRoundTrip(t *testing.T) {
-	finder := NewSignedCookieSessionFinder("cookiesession", []byte("secret"), 60*time.Minute)
+	finder := NewSignedCookieSessionFinder("cookiesession", []byte("secret"), 60*time.Minute, false)
 
 	request1, _ := http.NewRequest("GET", "http://example.org/", nil)
 	session1 := finder(&goanna.Request{Request: request1})
