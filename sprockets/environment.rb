@@ -15,6 +15,9 @@ class SprocketsEnv
     @opts[:asset_paths].each do |p|
       environment.append_path p
     end
+    if opts[:disable_compression]
+      require File.expand_path(__FILE__, '../disable_compression')
+    end
   end
 
   def assets_lister
