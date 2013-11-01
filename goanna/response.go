@@ -165,15 +165,29 @@ func (r *RedirectResponse) Target() string {
 	return r.urlStr
 }
 
-func NewJsonResponse(data interface{}) *OkResponse {
+type JsonResponse struct {
+	*OkResponse
+}
+
+func NewJsonResponse() *JsonResponse {
+	response := JsonResponse{NewResponse()}
+	response.Header.Set("Content-Type", "application/json")
+
+	return &response
+}
+
+func (this *JsonResponse) SetData(data interface{}) {
 	json, err := json.Marshal(data)
 	if err != nil {
 		log.Panicln("Bad data for json marshalling")
 	}
 
-	response := NewResponse()
-	response.content = []byte(json)
-	response.Header.Set("Content-Type", "application/json")
+	this.SetContent(json)
+}
+
+func NewJsonDataResponse(data interface{}) *JsonResponse {
+	response := NewJsonResponse()
+	response.SetData(data)
 
 	return response
 }
