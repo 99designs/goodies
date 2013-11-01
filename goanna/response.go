@@ -18,6 +18,7 @@ type Response interface {
 	SetCookie(http.Cookie)
 	ClearCookie(string)
 	Cookies() []http.Cookie
+	Content() []byte
 	StatusCode() int
 	SetStatusCode(int)
 	Headers() http.Header
@@ -26,7 +27,7 @@ type Response interface {
 type OkResponse struct {
 	Header  http.Header
 	cookies []http.Cookie
-	Content []byte
+	content []byte
 	Code    int
 }
 
@@ -34,14 +35,14 @@ func NewResponse() *OkResponse {
 	return &OkResponse{
 		Header:  http.Header{},
 		cookies: make([]http.Cookie, 0),
-		Content: make([]byte, 0),
+		content: make([]byte, 0),
 		Code:    http.StatusOK,
 	}
 }
 
 func NewStringResponse(content string) Response {
 	response := NewResponse()
-	response.Content = []byte(content)
+	response.content = []byte(content)
 	return response
 }
 
@@ -51,6 +52,10 @@ func (r *OkResponse) Cookies() []http.Cookie {
 
 func (r *OkResponse) Headers() http.Header {
 	return r.Header
+}
+
+func (r *OkResponse) Content() []byte {
+	return r.content
 }
 
 func (r *OkResponse) SetCookie(cookie http.Cookie) {
@@ -67,7 +72,7 @@ func (r *OkResponse) ClearCookie(name string) {
 }
 
 func (r *OkResponse) SetContent(content []byte) {
-	r.Content = content
+	r.content = content
 }
 
 func (r *OkResponse) SendHeaders(w http.ResponseWriter) {
@@ -89,7 +94,7 @@ func (r *OkResponse) SendHeaders(w http.ResponseWriter) {
 func (r *OkResponse) Send(w http.ResponseWriter) {
 	r.SendHeaders(w)
 	w.WriteHeader(r.Code)
-	w.Write([]byte(r.Content))
+	w.Write([]byte(r.content))
 }
 
 func (r *OkResponse) SetNoCache() {
@@ -167,7 +172,7 @@ func NewJsonResponse(data interface{}) *OkResponse {
 	}
 
 	response := NewResponse()
-	response.Content = []byte(json)
+	response.content = []byte(json)
 	response.Header.Set("Content-Type", "application/json")
 
 	return response
@@ -182,7 +187,7 @@ func NewJsonpResponse(callback string, data interface{}) *OkResponse {
 	body = append(body, []byte(");")...)
 
 	response := NewResponse()
-	response.Content = body
+	response.content = body
 	response.Header.Set("Content-Type", "application/javascript")
 
 	return response

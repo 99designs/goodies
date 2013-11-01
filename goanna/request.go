@@ -50,3 +50,12 @@ func (r *Request) BodyData() []byte {
 func (r *Request) QueryValue(key string) string {
 	return r.URL.Query().Get(key)
 }
+
+func (r *Request) QueryValueOrDefault(key string, def string) string {
+	val := r.URL.Query().Get(key)
+	if val == "" {
+		val = def
+	}
+
+	return val
+}
