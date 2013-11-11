@@ -9,6 +9,7 @@ import "time"
 type MonitorResult struct {
 	Description string
 	Duration    time.Duration
+	Args        []driver.Value
 }
 
 type DatabaseMonitor interface {
@@ -84,6 +85,7 @@ func (c MonitoredStmt) Exec(args []driver.Value) (driver.Result, error) {
 	c.monitorFunc.OnEvent(MonitorResult{
 		Description: c.query,
 		Duration:    duration,
+		Args:        args,
 	})
 
 	return result, err
@@ -99,6 +101,7 @@ func (c MonitoredStmt) Query(args []driver.Value) (driver.Rows, error) {
 	c.monitorFunc.OnEvent(MonitorResult{
 		Description: c.query,
 		Duration:    duration,
+		Args:        args,
 	})
 
 	return rows, err
