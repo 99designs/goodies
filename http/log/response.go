@@ -1,4 +1,4 @@
-package response
+package log
 
 import (
 	"bytes"

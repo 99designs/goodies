@@ -4,7 +4,7 @@ package panichandler
 import (
 	"bytes"
 	ghttp "github.com/99designs/goodies/http"
-	responseLogging "github.com/99designs/goodies/http/log/response"
+	responseLogging "github.com/99designs/goodies/http/log"
 	gioutil "github.com/99designs/goodies/ioutil"
 	"log"
 	"net/http"
