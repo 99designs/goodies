@@ -179,7 +179,7 @@ func NewJsonResponse() *JsonResponse {
 func (this *JsonResponse) SetData(data interface{}) {
 	json, err := json.Marshal(data)
 	if err != nil {
-		log.Panicln("Bad data for json marshalling")
+		log.Panicln("Bad data for json marshalling", err.Error())
 	}
 
 	this.SetContent(json)
