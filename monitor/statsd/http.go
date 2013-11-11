@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"github.com/99designs/goodies/goanna"
 	"github.com/gorilla/mux"
+	"github.com/peterbourgon/g2s"
 	"net/http"
 	"time"
 )
 
 type StatsdLogHandler struct {
 	handler          http.Handler
-	statter          *Statsd
+	statter          g2s.Statter
 	prefix           string
 	RequestFormatter func(req *http.Request) string
 }
@@ -39,7 +40,7 @@ func defaultGetRequestString(req *http.Request) string {
 	return ""
 }
 
-func Decorate(statter *Statsd, prefix string, h http.Handler) http.Handler {
+func Decorate(statter g2s.Statter, prefix string, h http.Handler) http.Handler {
 	return &StatsdLogHandler{
 		handler:          h,
 		statter:          statter,
