@@ -8,5 +8,5 @@ import (
 func ExampleDecorate() {
 	var h http.Handler
 	h = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
-	h = Decorate(h, DefaultSettings) // Responses from h now include default security headers
+	h = Decorate(DefaultSettings, h) // Responses from h now include default security headers
 }

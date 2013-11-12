@@ -50,3 +50,37 @@ func (r *Request) BodyData() []byte {
 func (r *Request) QueryValue(key string) string {
 	return r.URL.Query().Get(key)
 }
+
+func (r *Request) QueryValueOrDefault(key string, def string) string {
+	val := r.URL.Query().Get(key)
+	if val == "" {
+		val = def
+	}
+
+	return val
+}
+
+// IsGet returns whether the request is GET
+func (r *Request) IsGet() bool {
+	return r.Method == "GET"
+}
+
+// IsPost returns whether the request is POST
+func (r *Request) IsPost() bool {
+	return r.Method == "POST"
+}
+
+// IsPost returns whether the request is HEAD
+func (r *Request) IsHead() bool {
+	return r.Method == "HEAD"
+}
+
+// IsPut returns whether the request is PUT
+func (r *Request) IsPut() bool {
+	return r.Method == "PUT"
+}
+
+// IsPatch returns whether the request is PATCH
+func (r *Request) IsPatch() bool {
+	return r.Method == "PATCH"
+}

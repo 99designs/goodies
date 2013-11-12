@@ -4,7 +4,6 @@ package log
 
 import (
 	"bytes"
-	"github.com/99designs/goodies/http/log/response"
 	"log"
 	"net/http"
 	"os"
@@ -40,7 +39,7 @@ func CommonLogHandler(logger *log.Logger, templ string, h http.Handler) http.Han
 // ServeHTTP logs the request and response data to Common Log Format
 func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// decorate the writer so we can capture the status and size
-	loggedWriter := response.LogResponseMetadata(w)
+	loggedWriter := LogResponseMetadata(w)
 	// copy the request struct into loggableData so it cannot be modified
 	loggableData := LoggableData{time.Now(), *req, loggedWriter}
 	// Fall through to the actual http handler
@@ -67,7 +66,7 @@ func init() {
 type LoggableData struct {
 	StartTime time.Time
 	Req       http.Request
-	Rw        *response.ResponseMetadataLogger
+	Rw        *ResponseMetadataLogger
 }
 
 // Format the start time

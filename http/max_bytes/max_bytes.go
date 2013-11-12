@@ -9,7 +9,7 @@ type maxBytesHandler struct {
 	maxBytes int64
 }
 
-func MaxBytesHandler(h http.Handler, max int64) http.Handler {
+func MaxBytesHandler(max int64, h http.Handler) http.Handler {
 	return maxBytesHandler{h, max}
 }
 

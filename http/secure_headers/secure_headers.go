@@ -37,7 +37,7 @@ var DefaultSettings = Settings{
 	PermittedCrossDomainPolicies: "master-only",
 }
 
-func Decorate(delegate http.Handler, settings Settings) http.Handler {
+func Decorate(settings Settings, delegate http.Handler) http.Handler {
 	return secureHandler{
 		Delegate: delegate,
 		Settings: settings,

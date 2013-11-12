@@ -60,11 +60,6 @@ func NewController(sessionFinder SessionFinder) Controller {
 	}
 }
 
-// IsGetRequest returns whether the request is GET
-func (c *Controller) IsGetRequest() bool {
-	return c.Request.Method == "GET"
-}
-
 // LogRequest dumps the current request to stdout
 func (c *Controller) LogRequest(reason string) {
 	serializedHeaders := bytes.Buffer{}
@@ -84,11 +79,6 @@ func (c *Controller) LogRequest(reason string) {
 		string(c.Request.BodyData()),
 		string(debug.Stack()),
 	)
-}
-
-// IsPostRequest returns whether the request is POST
-func (c *Controller) IsPostRequest() bool {
-	return c.Request.Method == "POST"
 }
 
 // RenderView renders a template string using the provided template and vars struct
