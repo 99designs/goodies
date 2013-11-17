@@ -60,6 +60,17 @@ func (r *Request) QueryValueOrDefault(key string, def string) string {
 	return val
 }
 
+// FormValueOrDefault returns the result of Request.FormValue,
+// and if the result is empty returns the default string
+func (r *Request) FormValueOrDefault(key string, def string) string {
+	val := r.FormValue(key)
+	if val == "" {
+		val = def
+	}
+
+	return val
+}
+
 // IsGet returns whether the request is GET
 func (r *Request) IsGet() bool {
 	return r.Method == "GET"
