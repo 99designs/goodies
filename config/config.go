@@ -4,7 +4,13 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"os"
+	"reflect"
+	"strings"
+
+	"github.com/mtibben/gocase"
 )
 
 // Load reads the JSON-encoded file and marshalls
@@ -30,4 +36,47 @@ func Parse(jsondata []byte, v interface{}) {
 	if err != nil {
 		panic(err.Error())
 	}
+}
+
+type MarshalledEnvironmentVar struct {
+	EnvKey          string
+	EnvVal          string
+	StructFieldName string
+	Error           error
+}
+
+// LoadFromEnv iterates through a
+// struct's fields and tries to find matching
+// environment variables.
+// Returns a map of environment key and values that were
+// successfully set into the struct
+func LoadFromEnv(v interface{}, prefix string) (result []MarshalledEnvironmentVar) {
+	pointerValue := reflect.ValueOf(v)
+	structValue := pointerValue.Elem()
+	structType := structValue.Type()
+
+	for i := 0; i < structValue.NumField(); i++ {
+		structField := structType.Field(i)
+		fieldValue := structValue.Field(i)
+
+		if fieldValue.CanSet() {
+			envKey := strings.ToUpper(prefix) + gocase.ToUpperSnake(structField.Name)
+			envVal := os.Getenv(envKey)
+
+			if envVal != "" {
+				// create a json blob with the env data
+				jsonStr := ""
+				if fieldValue.Kind() == reflect.String {
+					jsonStr = fmt.Sprintf(`{"%s": "%s"}`, structField.Name, envVal)
+				} else {
+					jsonStr = fmt.Sprintf(`{"%s": %s}`, structField.Name, envVal)
+				}
+
+				err := json.Unmarshal([]byte(jsonStr), v)
+				result = append(result, MarshalledEnvironmentVar{envKey, envVal, structField.Name, err})
+			}
+		}
+	}
+
+	return
 }
