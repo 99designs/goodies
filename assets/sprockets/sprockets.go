@@ -1,12 +1,13 @@
+// Package sprockets integrates the power of sprockets ( http://getsprockets.org ) with your go program.
 package sprockets
 
 import (
 	"encoding/json"
 	"errors"
-	"html/template"
-	"io"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/99designs/goodies/assets"
 )
 
 type SprocketsServer struct {
@@ -15,18 +16,19 @@ type SprocketsServer struct {
 	assets       map[string]string
 }
 
-func NewSprocketsServer(baseUrl, manifestPath string) (ViewHelper, error) {
+func NewSprocketsServer(baseUrl, manifestPath string) (assets.AssetPipeline, error) {
 	s := SprocketsServer{baseUrl: baseUrl, manifestPath: manifestPath}
 	err := s.loadManifest()
-	return ViewHelper{&s}, err
+
+	return &s, err
 }
 
-func (s *SprocketsServer) GetAssetUrl(name string) (template.HTMLAttr, error) {
+func (s *SprocketsServer) GetAssetUrl(name string) (string, error) {
 	src, ok := s.assets[name]
 	if !ok {
-		return template.HTMLAttr(s.baseUrl + "__NOT_FOUND__" + name), errors.New("Asset not found: " + name)
+		return (s.baseUrl + "__NOT_FOUND__" + name), errors.New("Asset not found: " + name)
 	}
-	return template.HTMLAttr(s.baseUrl + src), nil
+	return (s.baseUrl + src), nil
 }
 
 func (s *SprocketsServer) GetAssetContents(name string) ([]byte, error) {
@@ -58,11 +60,8 @@ func (s *SprocketsServer) fetchAssetList(url string) (map[string]string, error) 
 		return nil, errors.New("Couldn't read assets from " + url)
 	}
 
-	return s.parseAssets(resp.Body)
-}
-
-func (s *SprocketsServer) parseAssets(r io.Reader) (map[string]string, error) {
 	manifest := make(map[string]string)
-	err := json.NewDecoder(r).Decode(&manifest)
+	err = json.NewDecoder(resp.Body).Decode(&manifest)
+
 	return manifest, err
 }
