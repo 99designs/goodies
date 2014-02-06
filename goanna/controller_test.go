@@ -3,11 +3,11 @@ package goanna
 import (
 	"bytes"
 	"fmt"
-	. "launchpad.net/gocheck"
 	"log"
 	"net/http"
 	"strings"
 	"testing"
+	. "launchpad.net/gocheck"
 )
 
 type ControllerSuite struct{}
@@ -34,8 +34,8 @@ Timestamp:`
 	out := string(output.Bytes())
 	c.Check(out, HasPrefix, startOfLog)
 	// Ensure stack trace is printed
-	c.Check(out, Contains, "goanna/controller.go")
-	c.Check(out, Contains, "goanna/controller_test.go")
+	c.Check(out, Contains, "controller.go")
+	c.Check(out, Contains, "controller_test.go")
 }
 
 type SimpleChecker struct {
