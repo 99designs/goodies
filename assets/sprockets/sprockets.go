@@ -2,8 +2,6 @@
 package sprockets
 
 import (
-	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 
@@ -11,57 +9,41 @@ import (
 )
 
 type SprocketsServer struct {
-	baseUrl      string
-	manifestPath string
-	assets       map[string]string
+	internalUrl string
+	externalUrl string
 }
 
-func NewSprocketsServer(baseUrl, manifestPath string) (assets.AssetPipeline, error) {
-	s := SprocketsServer{baseUrl: baseUrl, manifestPath: manifestPath}
-	err := s.loadManifest()
+// NewSprocketsServer creates a Sprockets asset pipeline
+func NewSprocketsServer(baseUrl string) (assets.AssetPipeline, error) {
+	s := SprocketsServer{
+		internalUrl: baseUrl,
+		externalUrl: baseUrl,
+	}
 
-	return &s, err
+	return &s, nil
+}
+
+// NewPrivateSprocketsServer creates a Sprockets asset pipeline
+// which uses a different baseUrl publicly
+func NewPrivateSprocketsServer(externalUrl, internalUrl string) (assets.AssetPipeline, error) {
+	s := SprocketsServer{
+		internalUrl: internalUrl,
+		externalUrl: externalUrl,
+	}
+
+	return &s, nil
 }
 
 func (s *SprocketsServer) GetAssetUrl(name string) (string, error) {
-	src, ok := s.assets[name]
-	if !ok {
-		return (s.baseUrl + "__NOT_FOUND__" + name), errors.New("Asset not found: " + name)
-	}
-	return (s.baseUrl + src), nil
+	return s.externalUrl + name, nil
 }
 
 func (s *SprocketsServer) GetAssetContents(name string) ([]byte, error) {
-	resp, err := http.Get(s.baseUrl + name)
+	resp, err := http.Get(s.internalUrl + name)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	return ioutil.ReadAll(resp.Body)
-}
-
-func (s *SprocketsServer) loadManifest() error {
-	var err error
-	if s.assets == nil {
-		s.assets, err = s.fetchAssetList(s.baseUrl + s.manifestPath)
-	}
-	return err
-}
-
-func (s *SprocketsServer) fetchAssetList(url string) (map[string]string, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("Couldn't read assets from " + url)
-	}
-
-	manifest := make(map[string]string)
-	err = json.NewDecoder(resp.Body).Decode(&manifest)
-
-	return manifest, err
 }
