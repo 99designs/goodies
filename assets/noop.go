@@ -1,16 +1,19 @@
 package assets
 
-type NoopAssetPipeline struct {
+import "net/http"
+
+type noopAssetPipeline struct {
+	http.Handler
 }
 
-func (s NoopAssetPipeline) GetAssetUrl(name string) (a string, b error) {
+func (s noopAssetPipeline) AssetUrl(name string) (a string, b error) {
 	return
 }
 
-func (s NoopAssetPipeline) GetAssetContents(name string) (a []byte, b error) {
+func (s noopAssetPipeline) AssetContents(name string) (a []byte, b error) {
 	return
 }
 
-func NoopAssetHelper() AssetHelper {
-	return AssetHelper{NoopAssetPipeline{}}
+var NoopAssetPipeline = &noopAssetPipeline{
+	Handler: http.NotFoundHandler(),
 }
