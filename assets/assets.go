@@ -1,48 +1,42 @@
 package assets
 
 import (
-	"html/template"
 	"net/http"
+	"strings"
 )
 
 type AssetPipeline interface {
-	GetAssetUrl(name string) (string, error)
-	GetAssetContents(name string) ([]byte, error)
+	http.Handler
+	AssetUrl(name string) (string, error)
+	AssetContents(name string) ([]byte, error)
 }
 
-type AssetHelper struct {
+type prefixPipeline struct {
 	AssetPipeline
+	prefix string
 }
 
-func (vh *AssetHelper) StylesheetLinkTag(name string) (template.HTML, error) {
-	url, err := vh.AssetUrl(name)
-	return template.HTML(`<link href="` + template.HTMLEscaper(url) + `" rel="stylesheet" type="text/css">`), err
+// add the prefix when providing urls
+func (s *prefixPipeline) AssetUrl(name string) (url string, err error) {
+	url, err = s.AssetPipeline.AssetUrl(name)
+	if err == nil {
+		url = s.prefix + url
+	}
+
+	return
 }
 
-func (vh *AssetHelper) InlineStylesheet(name string) (template.HTML, error) {
-	content, err := vh.AssetPipeline.GetAssetContents(name)
-	return template.HTML(`<style>` + string(content) + `</style>`), err
+func (s *prefixPipeline) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	r.URL.Path = "/" + strings.TrimPrefix(r.URL.Path, s.prefix)
+	s.AssetPipeline.ServeHTTP(w, r)
 }
 
-func (vh *AssetHelper) JavascriptTag(name string) (template.HTML, error) {
-	url, err := vh.AssetUrl(name)
-	return template.HTML(`<script src="` + template.HTMLEscaper(url) + `" type="text/javascript"></script>`), err
-}
-
-func (vh *AssetHelper) AssetUrl(name string) (template.HTMLAttr, error) {
-	url, err := vh.AssetPipeline.GetAssetUrl(name)
-	return template.HTMLAttr(url), err
-}
-
-type AssetHandler struct {
-	AssetPipeline
-}
-
-func (vh AssetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	c, err := vh.GetAssetContents(r.URL.Path[1:])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	} else {
-		w.Write(c)
+func Prefix(prefix string, p AssetPipeline) AssetPipeline {
+	if len(prefix) == 0 {
+		return p
+	}
+	return &prefixPipeline{
+		prefix:        prefix,
+		AssetPipeline: p,
 	}
 }

@@ -4,42 +4,35 @@ package sprockets
 import (
 	"io/ioutil"
 	"net/http"
-
-	"github.com/99designs/goodies/assets"
+	"net/http/httputil"
+	"net/url"
 )
 
+// SprocketsServer is an implementation of AssetPipeline that
+// uses an external Sprockets server for compiling assets
+// on demand
 type SprocketsServer struct {
-	internalUrl string
-	externalUrl string
+	http.Handler
+	target *url.URL
 }
 
 // NewSprocketsServer creates a Sprockets asset pipeline
-func NewSprocketsServer(baseUrl string) (assets.AssetPipeline, error) {
+func NewSprocketsServer(target *url.URL) (*SprocketsServer, error) {
 	s := SprocketsServer{
-		internalUrl: baseUrl,
-		externalUrl: baseUrl,
+		Handler: httputil.NewSingleHostReverseProxy(target),
+		target:  target,
 	}
 
 	return &s, nil
 }
 
-// NewPrivateSprocketsServer creates a Sprockets asset pipeline
-// which uses a different baseUrl publicly
-func NewPrivateSprocketsServer(externalUrl, internalUrl string) (assets.AssetPipeline, error) {
-	s := SprocketsServer{
-		internalUrl: internalUrl,
-		externalUrl: externalUrl,
-	}
-
-	return &s, nil
+func (s *SprocketsServer) AssetUrl(name string) (string, error) {
+	return name, nil
 }
 
-func (s *SprocketsServer) GetAssetUrl(name string) (string, error) {
-	return s.externalUrl + name, nil
-}
-
-func (s *SprocketsServer) GetAssetContents(name string) ([]byte, error) {
-	resp, err := http.Get(s.internalUrl + name)
+func (s *SprocketsServer) AssetContents(name string) ([]byte, error) {
+	url := s.target.String() + name
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
