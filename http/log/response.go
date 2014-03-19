@@ -33,23 +33,23 @@ func (this *LoggedResponseBodyWriter) WriteHeader(h int) {
 	this.rw.WriteHeader(h)
 }
 
-type ResponseMetadataLogger struct {
+type ResponseWriterWatcher struct {
 	rw     http.ResponseWriter
 	Status int
 	Size   int
 }
 
-func LogResponseMetadata(rw http.ResponseWriter) *ResponseMetadataLogger {
-	return &ResponseMetadataLogger{
+func WatchResponseWriter(rw http.ResponseWriter) *ResponseWriterWatcher {
+	return &ResponseWriterWatcher{
 		rw: rw,
 	}
 }
 
-func (l *ResponseMetadataLogger) Header() http.Header {
+func (l *ResponseWriterWatcher) Header() http.Header {
 	return l.rw.Header()
 }
 
-func (l *ResponseMetadataLogger) Write(b []byte) (int, error) {
+func (l *ResponseWriterWatcher) Write(b []byte) (int, error) {
 	if l.Status == 0 {
 		// The status will be StatusOK if WriteHeader has not been called yet
 		l.Status = http.StatusOK
@@ -59,7 +59,7 @@ func (l *ResponseMetadataLogger) Write(b []byte) (int, error) {
 	return size, err
 }
 
-func (l *ResponseMetadataLogger) WriteHeader(s int) {
+func (l *ResponseWriterWatcher) WriteHeader(s int) {
 	l.rw.WriteHeader(s)
 	l.Status = s
 }

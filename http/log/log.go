@@ -1,5 +1,4 @@
-// Package log decorates any http handler with a
-// Common Log Format logger
+// Package log is for http logging
 package log
 
 import (
@@ -9,6 +8,13 @@ import (
 	"os"
 	"text/template"
 	"time"
+)
+
+const (
+	// templates for logging
+	CommonLogFormat                   = `{{ or .Request.RemoteAddr "-" }} {{ or .UrlUsername "-" }} - [{{ or (.ClfTime .Start) "-" }}] "{{ or .Request.Method "-" }} {{ or .Request.RequestURI "-" }} {{ or .Request.Proto "-" }}" {{ or .Response.Status "-" }} {{ or .Response.Size "-" }}`
+	CommonLogFormatUsingXForwardedFor = `{{ or ( .Request.Header.Get "X-Forwarded-For" ) "-" }} {{ or .UrlUsername "-" }} - [{{ or (.ClfTime .Start) "-" }}] "{{ or .Request.Method "-" }} {{ or .Request.RequestURI "-" }} {{ or .Request.Proto "-" }}" {{ or .Response.Status "-" }} {{ or .Response.Size "-" }}`
+	CommonLogFormatStrippingQueries   = `{{ or .Request.RemoteAddr "-" }} {{ or .UrlUsername "-" }} - [{{ or (.ClfTime .Start) "-" }}] "{{ or .Request.Method "-" }} {{ or .Request.URL.Path "-" }} {{ or .Request.Proto "-" }}" {{ or .Response.Status "-" }} {{ or .Response.Size "-" }}`
 )
 
 type commonLogHandler struct {
@@ -23,63 +29,55 @@ func CommonLogHandler(logger *log.Logger, templ string, h http.Handler) http.Han
 	if logger == nil {
 		logger = log.New(os.Stdout, "", 0)
 	}
-
-	t := DefaultFormatter
-	if templ != "" {
-		t = template.Must(template.New("").Parse(templ))
+	if templ == "" {
+		templ = CommonLogFormat
 	}
 
 	return &commonLogHandler{
 		handler:  h,
 		logger:   logger,
-		template: t,
+		template: template.Must(template.New("").Parse(templ)),
 	}
 }
 
 // ServeHTTP logs the request and response data to Common Log Format
 func (lh *commonLogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// decorate the writer so we can capture the status and size
-	loggedWriter := LogResponseMetadata(w)
-	// copy the request struct into loggableData so it cannot be modified
-	loggableData := LoggableData{time.Now(), *req, loggedWriter}
-	// Fall through to the actual http handler
-	lh.handler.ServeHTTP(loggedWriter, req)
+	// take a copy of the request (so it's immutable)
+	// watch the writer and capture the status and size
+	logData := LogData{
+		Request:  *req,
+		Response: WatchResponseWriter(w),
+	}
+
+	logData.Start = time.Now()
+	lh.handler.ServeHTTP(logData.Response, req)
+	logData.End = time.Now()
 
 	logOutput := bytes.Buffer{}
-	err := lh.template.Execute(&logOutput, loggableData)
+	err := lh.template.Execute(&logOutput, logData)
 	if err != nil {
 		panic(err)
 	}
+
 	lh.logger.Println(logOutput.String())
 }
 
-const CommonLogFormat = `{{ or .Req.RemoteAddr '-' }} {{ or .UrlUsername '-' }} - [{{ or .CLFFormatStartTime '-' }}] "{{ or .Req.Method '-' }} {{ or .Req.RequestURI '-' }} {{ or .Req.Proto '-' }}" {{ or .Rw.Status '-' }} {{ or .Rw.Size '-' }}`
-const CommonLogFormatUsingXForwardedFor = `{{ or ( .Req.Header.Get "X-Forwarded-For" ) '-' }} {{ or .UrlUsername '-' }} - [{{ or .CLFFormatStartTime '-' }}] "{{ or .Req.Method '-' }} {{ or .Req.RequestURI '-' }} {{ or .Req.Proto '-' }}" {{ or .Rw.Status '-' }} {{ or .Rw.Size '-' }}`
-const CommonLogFormatStrippingQueries = `{{ or .Req.RemoteAddr '-' }} {{ or .UrlUsername '-' }} - [{{ or .CLFFormatStartTime '-' }}] "{{ or .Req.Method '-' }} {{ or .Req.URL.Path '-' }} {{ or .Req.Proto '-' }}" {{ or .Rw.Status '-' }} {{ or .Rw.Size '-' }}`
-
-var DefaultFormatter *template.Template
-
-func init() {
-	DefaultFormatter = template.Must(template.New("").Parse(CommonLogFormat))
+type LogData struct {
+	Start    time.Time
+	End      time.Time
+	Request  http.Request
+	Response *ResponseWriterWatcher
 }
 
-type LoggableData struct {
-	StartTime time.Time
-	Req       http.Request
-	Rw        *ResponseMetadataLogger
-}
-
-// Format the start time
-func (this LoggableData) CLFFormatStartTime() string {
-	return this.StartTime.Format("02/Jan/2006:15:04:05 -0700")
+// Format time in CLF format
+func (this LogData) ClfTime(t time.Time) string {
+	return t.Format("02/Jan/2006:15:04:05 -0700")
 }
 
 // Extract username from the request url
-func (this LoggableData) UrlUsername() string {
-	if this.Req.URL.User != nil {
-		if name := this.Req.URL.User.Username(); name != "" {
-			return name
-		}
+func (this LogData) UrlUsername() string {
+	if this.Request.URL.User != nil {
+		return this.Request.URL.User.Username()
 	}
-	return "-"
+	return ""
 }
