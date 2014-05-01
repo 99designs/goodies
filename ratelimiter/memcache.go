@@ -3,6 +3,8 @@ package ratelimiter
 import (
 	"bytes"
 	"encoding/gob"
+	"net/url"
+
 	"github.com/bradfitz/gomemcache/memcache"
 )
 
@@ -21,8 +23,9 @@ func NewMemcache(servers []string, cacheKeyPrefix string) *Memcache {
 }
 
 func (m *Memcache) GetBucketFor(key string) (*LeakyBucket, error) {
+	key = normaliseKey(m.keyprefix + key)
 
-	item, err := m.mc.Get(m.keyprefix + key)
+	item, err := m.mc.Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -42,6 +45,7 @@ func (m *Memcache) GetBucketFor(key string) (*LeakyBucket, error) {
 }
 
 func (m *Memcache) SetBucketFor(key string, bucket LeakyBucket) error {
+	key = normaliseKey(m.keyprefix + key)
 
 	// LeakyBucket has a closure
 	// So we have LeakyBucketSer struct to serialise
@@ -56,8 +60,19 @@ func (m *Memcache) SetBucketFor(key string, bucket LeakyBucket) error {
 	}
 
 	return m.mc.Set(&memcache.Item{
-		Key:        m.keyprefix + key,
+		Key:        key,
 		Value:      buf.Bytes(),
 		Expiration: int32(bucket.DrainedAt().Unix()),
 	})
+}
+
+// Keys must be at maximum 250 bytes long, ASCII, and not
+// contain whitespace or control characters.
+func normaliseKey(key string) string {
+	newkey := url.QueryEscape(key)
+	if len(newkey) > 250 {
+		newkey = newkey[:250]
+	}
+
+	return newkey
 }
