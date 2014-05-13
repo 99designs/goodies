@@ -4,6 +4,7 @@ package i18n
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -18,7 +19,7 @@ func LoadCatalogs(translationsPath string, parser Parser) (LanguagesCatalog, err
 		parts := strings.Split(fileInfo.Name(), ".")
 		lang := parts[0]
 
-		fp, err := os.Open(translationsPath + fileInfo.Name())
+		fp, err := os.Open(filepath.Join(translationsPath, fileInfo.Name()))
 		if err != nil {
 			return nil, err
 		}
