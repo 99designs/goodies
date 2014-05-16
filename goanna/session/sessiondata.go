@@ -2,9 +2,10 @@ package session
 
 import (
 	"bytes"
-	"crypto/rand"
 	"encoding/gob"
 	"errors"
+
+	"github.com/dchest/uniuri"
 )
 
 type sessionData struct {
@@ -40,17 +41,7 @@ func (sd *sessionData) Clear() {
 }
 
 func generateSessionId() string {
-	return randString(22) // aprox 128 bits of entropy (62^22)
-}
-
-func randString(n int) string {
-	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	var bytes = make([]byte, n)
-	rand.Read(bytes)
-	for i, b := range bytes {
-		bytes[i] = alphanum[b%byte(len(alphanum))]
-	}
-	return string(bytes)
+	return uniuri.NewLen(22) // aprox 128 bits of entropy (62^22)
 }
 
 func (sd sessionData) Unmarshal() ([]byte, error) {
