@@ -22,16 +22,25 @@ var (
 	constructorErr = errors.New("Constructor must be a function and output 1 parameter")
 )
 
+type DependencyInjector interface {
+	Register(interface{}) error
+	MustRegister(interface{})
+	Create(interface{}) interface{}
+	CreateFromType(reflect.Type) reflect.Value
+}
+
 // DependencyInjector is a simple IOC container
 // that allows registering constructor functions
 // and creating types
-type DependencyInjector struct {
-	registry map[reflect.Type]interface{}
+type dependencyInjector struct {
+	caching   bool
+	instances map[reflect.Type]reflect.Value
+	registry  map[reflect.Type]interface{}
 }
 
 // Register registers a constructor function
 // with the DI container
-func (di *DependencyInjector) Register(constructorFunc interface{}) error {
+func (di *dependencyInjector) Register(constructorFunc interface{}) error {
 	constructorType := reflect.TypeOf(constructorFunc)
 
 	if (constructorType.Kind() != reflect.Func) || (constructorType.NumOut() != 1) {
@@ -54,7 +63,7 @@ func (di *DependencyInjector) Register(constructorFunc interface{}) error {
 }
 
 // MustRegister is a helper that calls Register and panics if it returns an error
-func (di *DependencyInjector) MustRegister(constructorFunc interface{}) {
+func (di *dependencyInjector) MustRegister(constructorFunc interface{}) {
 	err := di.Register(constructorFunc)
 	if err != nil {
 		panic(err)
@@ -62,12 +71,18 @@ func (di *DependencyInjector) MustRegister(constructorFunc interface{}) {
 }
 
 // Create creates an instance of the type of the given parameter
-func (di *DependencyInjector) Create(avar interface{}) interface{} {
-	return di.CreateFromType(reflect.TypeOf(avar)).Interface()
+func (di *dependencyInjector) Create(avar interface{}) interface{} {
+	varType := reflect.TypeOf(avar)
+
+	if di.caching {
+		return di.cachedCreateFromType(varType).Interface()
+	} else {
+		return di.CreateFromType(varType).Interface()
+	}
 }
 
 // CreateFromType creates an instance of the given type
-func (di *DependencyInjector) CreateFromType(atype reflect.Type) reflect.Value {
+func (di *dependencyInjector) createFromType(atype reflect.Type) reflect.Value {
 	constructor, exists := di.registry[atype]
 	if !exists {
 		panic(fmt.Sprintf("Can't find a mapping to create a %s", atype))
@@ -87,9 +102,46 @@ func (di *DependencyInjector) CreateFromType(atype reflect.Type) reflect.Value {
 	return newObj[0]
 }
 
+// cachedCreateFromType creates an instance of the given type
+func (di *dependencyInjector) cachedCreateFromType(atype reflect.Type) reflect.Value {
+	_, exists := di.instances[atype]
+
+	if !exists {
+		di.instances[atype] = di.createFromType(atype)
+	}
+
+	return di.instances[atype]
+}
+
+// CreateFromType creates an instance of the given type
+func (di *dependencyInjector) CreateFromType(atype reflect.Type) reflect.Value {
+	if di.caching {
+		return di.cachedCreateFromType(atype)
+	} else {
+		return di.createFromType(atype)
+	}
+}
+
 // NewDependencyInjector returns a new DependencyInjector
 func NewDependencyInjector() DependencyInjector {
-	return DependencyInjector{
-		registry: make(map[reflect.Type]interface{}),
+	return &dependencyInjector{
+		registry:  make(map[reflect.Type]interface{}),
+		instances: make(map[reflect.Type]reflect.Value),
+	}
+}
+
+// ServiceContainer is a type of DependencyInjector that caches instances
+type ServiceContainer struct {
+	DependencyInjector
+}
+
+// NewServiceContainer returns a new ServiceContainer
+func NewServiceContainer() ServiceContainer {
+	return ServiceContainer{
+		DependencyInjector: &dependencyInjector{
+			registry:  make(map[reflect.Type]interface{}),
+			instances: make(map[reflect.Type]reflect.Value),
+			caching:   true,
+		},
 	}
 }
