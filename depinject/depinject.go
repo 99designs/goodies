@@ -131,17 +131,15 @@ func NewDependencyInjector() DependencyInjector {
 }
 
 // ServiceContainer is a type of DependencyInjector that caches instances
-type ServiceContainer struct {
+type ServiceContainer interface {
 	DependencyInjector
 }
 
 // NewServiceContainer returns a new ServiceContainer
 func NewServiceContainer() ServiceContainer {
-	return ServiceContainer{
-		DependencyInjector: &dependencyInjector{
-			registry:  make(map[reflect.Type]interface{}),
-			instances: make(map[reflect.Type]reflect.Value),
-			caching:   true,
-		},
+	return &dependencyInjector{
+		registry:  make(map[reflect.Type]interface{}),
+		instances: make(map[reflect.Type]reflect.Value),
+		caching:   true,
 	}
 }
