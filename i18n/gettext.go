@@ -3,6 +3,7 @@ package i18n
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,28 +13,37 @@ type Catalog map[string]string
 type LanguagesCatalog map[string]Catalog
 type Parser func(fp *os.File) (Catalog, error)
 
-func LoadCatalogs(translationsPath string, parser Parser) (LanguagesCatalog, error) {
+func LoadCatalogs(translationsPath string, parser Parser) LanguagesCatalog {
 	dirs, _ := ioutil.ReadDir(translationsPath)
 	catalogs := make(map[string]Catalog)
 	for _, fileInfo := range dirs {
-		parts := strings.Split(fileInfo.Name(), ".")
+		filename := fileInfo.Name()
+
+		// ignore dot files and directories
+		if filename[0] == '.' || fileInfo.IsDir() {
+			continue
+		}
+
+		parts := strings.Split(filename, ".")
 		lang := parts[0]
 
-		fp, err := os.Open(filepath.Join(translationsPath, fileInfo.Name()))
+		fp, err := os.Open(filepath.Join(translationsPath, filename))
 		if err != nil {
-			return nil, err
+			log.Printf("Couldn't open %s: %s\n", filename, err.Error())
+			continue
 		}
 		defer fp.Close()
 
 		catalog, err := parser(fp)
 		if err != nil {
-			return nil, err
+			log.Printf("Parser couldn't read %s: %s\n", filename, err.Error())
+			continue
 		}
 
 		catalogs[lang] = catalog
 	}
 
-	return catalogs, nil
+	return catalogs
 }
 
 func (catalog Catalog) String(message string) string {
