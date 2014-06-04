@@ -58,3 +58,12 @@ func TestEqual(t *testing.T) {
 		t.Errorf("Test 2: expected %b, got %b", expected, result)
 	}
 }
+
+func TestUniq(t *testing.T) {
+	result := Uniq([]string{"abc", "abc", "bcd"})
+	expected := []string{"abc", "bcd"}
+
+	if !Equal(result, expected) {
+		t.Errorf("Test 1: expected %s, got %s", expected, result)
+	}
+}

@@ -2,6 +2,7 @@
 package stringslice
 
 import (
+	"sort"
 	"strings"
 )
 
@@ -55,4 +56,20 @@ func Equal(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// Uniq returns a slice containing the unique strings
+// found in items
+func Uniq(items []string) (uniqItems []string) {
+	sort.Strings(items)
+
+	lastitem := ""
+	for _, item := range items {
+		if item != lastitem {
+			uniqItems = append(uniqItems, item)
+			lastitem = item
+		}
+	}
+
+	return
 }
