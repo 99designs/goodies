@@ -1,9 +1,6 @@
 package assets
 
-import (
-	"net/http"
-	"strings"
-)
+import "net/http"
 
 type AssetPipeline interface {
 	http.Handler
@@ -26,15 +23,13 @@ func (s *prefixPipeline) AssetUrl(name string) (url string, err error) {
 	return
 }
 
-func (s *prefixPipeline) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.URL.Path = "/" + strings.TrimPrefix(r.URL.Path, s.prefix)
-	s.AssetPipeline.ServeHTTP(w, r)
-}
-
+// Prefix returns an AssetPipeline that prefixes URLs with the
+// given string
 func Prefix(prefix string, p AssetPipeline) AssetPipeline {
-	if len(prefix) == 0 {
+	if prefix == "" {
 		return p
 	}
+
 	return &prefixPipeline{
 		prefix:        prefix,
 		AssetPipeline: p,
