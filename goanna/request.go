@@ -1,10 +1,11 @@
 package goanna
 
 import (
-	ghttp "github.com/99designs/goodies/http"
 	"io/ioutil"
 	"net"
 	"net/http"
+
+	ghttp "github.com/99designs/goodies/http"
 )
 
 // Request decorates a http.Request to add helper methods
@@ -94,4 +95,8 @@ func (r *Request) IsPut() bool {
 // IsPatch returns whether the request is PATCH
 func (r *Request) IsPatch() bool {
 	return r.Method == "PATCH"
+}
+
+func (r *Request) Log(v ...string) {
+	LogRequest(r, v...)
 }

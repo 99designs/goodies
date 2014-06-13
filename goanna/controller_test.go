@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	. "launchpad.net/gocheck"
+	. "gopkg.in/check.v1"
 )
 
 type ControllerSuite struct{}
@@ -21,13 +21,14 @@ func (s *ControllerSuite) TestErrorLogging(c *C) {
 	con := NewController(nil)
 	con.SetRequest(req)
 	output := bytes.Buffer{}
-	con.logger = log.New(&output, "", 0)
+	Logger = log.New(&output, "", 0)
 	con.LogRequest("Just for testing")
 	fmt.Print(string(output.Bytes()))
 
 	startOfLog := `
-*** Diagnostic Log ***
-Reason for diagnostic: Just for testing
+----------------------------------------------------------------------
+Just for testing
+
 Url: /
 Method: GET
 Timestamp:`

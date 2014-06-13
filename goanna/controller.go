@@ -4,27 +4,9 @@ package goanna
 import (
 	"bytes"
 	"html/template"
-	"log"
 	"net/http"
 	"net/url"
-	"runtime/debug"
-	"time"
 )
-
-const diagnosticTemplate = `
-*** Diagnostic Log ***
-Reason for diagnostic: %s
-Url: %s
-Method: %s
-Timestamp: %s
-****** Request Headers ******
-%s
-******* Request Body ********
-%s
-******** Stack trace ********
-%s
------------------------------
-`
 
 // ControllerInterface is implemented by controllers
 type ControllerInterface interface {
@@ -37,7 +19,6 @@ type ControllerInterface interface {
 type Controller struct {
 	Request       *Request
 	sessionFinder SessionFinder
-	logger        *log.Logger
 }
 
 // SetRequest injects a request into the controller
@@ -62,23 +43,7 @@ func NewController(sessionFinder SessionFinder) Controller {
 
 // LogRequest dumps the current request to stdout
 func (c *Controller) LogRequest(reason string) {
-	serializedHeaders := bytes.Buffer{}
-	c.Request.Header.Write(&serializedHeaders)
-
-	l := log.Printf
-	if c.logger != nil {
-		l = c.logger.Printf
-	}
-	l(
-		diagnosticTemplate,
-		reason,
-		c.Request.URL.String(),
-		c.Request.Method,
-		time.Now(),
-		string(serializedHeaders.String()),
-		string(c.Request.BodyData()),
-		string(debug.Stack()),
-	)
+	LogRequest(c.Request, reason)
 }
 
 // RenderView renders a template string using the provided template and vars struct
