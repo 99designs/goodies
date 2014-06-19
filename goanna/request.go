@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	ghttp "github.com/99designs/goodies/http"
+	"github.com/gorilla/mux"
 )
 
 // Request decorates a http.Request to add helper methods
@@ -99,4 +100,9 @@ func (r *Request) IsPatch() bool {
 
 func (r *Request) Log(v ...string) {
 	LogRequest(r, v...)
+}
+
+// UrlValue returns whether the request is PATCH
+func (r *Request) UrlValue(key string) string {
+	return mux.Vars(r.Request)[key]
 }
