@@ -2,9 +2,10 @@ package goanna
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
 	"net/http"
 	"reflect"
+
+	"github.com/gorilla/mux"
 )
 
 type ControllerFactoryFunc func() ControllerInterface
@@ -85,4 +86,16 @@ func NewHandler(factory ControllerFactoryFunc, methodName string) ControllerHand
 		panic("Invalid handler: " + methodName)
 	}
 	return handler
+}
+
+// GoannaHandlerFunc is a function type that can be handled by
+// GoannaHandler
+type GoannaHandlerFunc func(r *Request) Response
+
+// Handler handles functions of type GoannaHandlerFunc
+func Handler(gf GoannaHandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		gr := &Request{Request: r}
+		gf(gr).Send(w)
+	}
 }

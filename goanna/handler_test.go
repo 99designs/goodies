@@ -1,9 +1,9 @@
 package goanna
 
 import (
-	. "launchpad.net/gocheck"
 	"net/http"
 	"testing"
+	. "gopkg.in/check.v1"
 )
 
 type HandlerSuite struct {
