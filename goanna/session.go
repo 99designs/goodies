@@ -7,6 +7,17 @@ import (
 // SessionFinder finds a session based on the request
 type SessionFinder func(*Request) Session
 
+type GoannaSessionHandlerFunc func(r *Request, s Session) Response
+
+func (finder SessionFinder) Handler(handler GoannaSessionHandlerFunc) GoannaHandlerFunc {
+	return func(r *Request) Response {
+		sess := finder(r)
+		resp := handler(r, sess)
+		sess.WriteToResponse(resp)
+		return resp
+	}
+}
+
 type Session interface {
 	GetId() string
 	Get(string) string

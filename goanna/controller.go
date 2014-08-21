@@ -58,7 +58,7 @@ func (c *Controller) RenderView(templateStr string, vars interface{}) []byte {
 
 // RenderView renders a template using the provided template and vars struct
 // and returns the rendered tamplate
-func (c *Controller) RenderTemplate(t *template.Template, vars interface{}) []byte {
+func RenderTemplate(t *template.Template, vars interface{}) []byte {
 	out := bytes.NewBuffer(nil)
 	err := t.Execute(out, vars)
 	if err != nil {
@@ -66,17 +66,27 @@ func (c *Controller) RenderTemplate(t *template.Template, vars interface{}) []by
 	}
 	return out.Bytes()
 }
+func (c *Controller) RenderTemplate(t *template.Template, vars interface{}) []byte {
+	return RenderTemplate(t, vars)
+}
 
 // Render renders a template using the provided template and vars struct
 // and returns a response with the rendered template
-func (c *Controller) RenderTemplateResponse(t *template.Template, vars interface{}) *OkResponse {
+func RenderTemplateResponse(t *template.Template, vars interface{}) *OkResponse {
 	response := NewResponse()
-	response.SetContent(c.RenderTemplate(t, vars))
+	response.SetContent(RenderTemplate(t, vars))
 	return response
+}
+func (c *Controller) RenderTemplateResponse(t *template.Template, vars interface{}) *OkResponse {
+	return RenderTemplateResponse(t, vars)
 }
 
 // Redirect returns a new RedirectResponse
 // (HTTP 302)
+func Redirect(urlStr string) *RedirectResponse {
+	return NewRedirectResponse(urlStr)
+}
+
 func (c *Controller) Redirect(urlStr string) *RedirectResponse {
 	return NewRedirectResponse(urlStr)
 }
