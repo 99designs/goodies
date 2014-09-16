@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"sort"
 )
 
 type Xliff struct {
@@ -58,6 +59,16 @@ func (b *Body) Add(source, target string) {
 	b.TransList = append(b.TransList, transunit)
 }
 
+type Alphabetically []TransUnit
+
+func (a Alphabetically) Len() int           { return len(a) }
+func (a Alphabetically) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a Alphabetically) Less(i, j int) bool { return a[i].Source < a[j].Source }
+
+func (b *Body) SortAlphabetically() {
+	sort.Sort(Alphabetically(b.TransList))
+}
+
 func CreateXliff(catalog Catalog, sourceLanguage, targetLanguage string) []byte {
 
 	xliff := Xliff{
@@ -74,6 +85,8 @@ func CreateXliff(catalog Catalog, sourceLanguage, targetLanguage string) []byte 
 	for source, target := range catalog {
 		xliff.File.Body.Add(source, target)
 	}
+
+	xliff.File.Body.SortAlphabetically()
 
 	xml, err := xml.Marshal(xliff)
 	if err != nil {
