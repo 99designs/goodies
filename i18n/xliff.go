@@ -1,8 +1,10 @@
 package i18n
 
 import (
+	"crypto/md5"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -25,6 +27,7 @@ type Body struct {
 	TransList []TransUnit `xml:"trans-unit"`
 }
 type TransUnit struct {
+	Id     string   `xml:"id,attr,omitempty"`
 	Source string   `xml:"source"`
 	Target string   `xml:"target"`
 	Note   []string `xml:"note"`
@@ -53,6 +56,7 @@ func XliffParser(fp *os.File) (Catalog, error) {
 }
 func (b *Body) Add(source, target string) {
 	transunit := TransUnit{
+		Id:     fmt.Sprintf("%x", md5.Sum([]byte(source))),
 		Source: source,
 		Target: target,
 	}
